@@ -2,14 +2,14 @@ package main
 
 import (
 	"fmt"
+	"os"
 
-	"github.com/nudoxorg/loom/internal/project"
-	//"gitnub.com/nudoxorg/loom/internal/cli"
-	"github.com/nudoxorg/loom/internal/config"
-	"github.com/nudoxorg/loom/internal/storage"
-	//"github.com/nudoxorg/loom/internal/mcp"
+	"github.com/nudoxorg/loom/internal/cli"
 )
 
 func main() {
-	fmt.Println("hello world")
+	if err := cli.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }

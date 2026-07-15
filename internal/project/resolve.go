@@ -27,7 +27,11 @@ func Resolve(startDir string) (*Project, error) {
 
 // findRoot does the actual upward dir walk looking for git
 func findRoot(startDir string) (string, error) {
-	dir := startDir
+	dir, err := filepath.Abs(startDir)
+	if err != nil {
+		return "", fmt.Errorf("resolving path: %w", err)
+	}
+
 	for {
 		_, err := os.Stat(filepath.Join(dir, ".git"))
 		if err == nil {
