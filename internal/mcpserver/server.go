@@ -42,6 +42,7 @@ func New() *server.MCPServer {
 	registerClaimTools(s)
 	registerGlobalTools(s)
 	registerConfigTools(s)
+	registerHooksTools(s)
 
 	return s
 }
