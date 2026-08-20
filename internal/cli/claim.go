@@ -1,8 +1,11 @@
 package cli
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/nudoxorg/loom/internal/config"
+	"github.com/nudoxorg/loom/internal/output"
 	"github.com/nudoxorg/loom/internal/project"
 	"github.com/nudoxorg/loom/internal/storage"
 	"github.com/spf13/cobra"
@@ -14,6 +17,11 @@ var claimCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := project.EnsureHome(); err != nil {
+			return err
+		}
+
+		settings, err := config.Load()
+		if err != nil {
 			return err
 		}
 
@@ -30,7 +38,7 @@ var claimCmd = &cobra.Command{
 
 		claim := storage.Claim{
 			Path:      args[0],
-			Agent:     "manual",
+			Agent:     settings.DefaultAgent,
 			ClaimedAt: time.Now(),
 		}
 
@@ -39,7 +47,7 @@ var claimCmd = &cobra.Command{
 		}
 
 		event := storage.Event{
-			Agent:     "manual",
+			Agent:     settings.DefaultAgent,
 			Kind:      "claim",
 			Message:   "claimed " + args[0],
 			Path:      args[0],
@@ -49,6 +57,8 @@ var claimCmd = &cobra.Command{
 		if err := storage.InsertEvent(db, event); err != nil {
 			return err
 		}
+
+		fmt.Println(output.Success("claimed " + args[0]))
 
 		return nil
 	},

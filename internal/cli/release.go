@@ -1,8 +1,11 @@
 package cli
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/nudoxorg/loom/internal/config"
+	"github.com/nudoxorg/loom/internal/output"
 	"github.com/nudoxorg/loom/internal/project"
 	"github.com/nudoxorg/loom/internal/storage"
 	"github.com/spf13/cobra"
@@ -17,6 +20,11 @@ var releaseCmd = &cobra.Command{
 			return err
 		}
 
+		settings, err := config.Load()
+		if err != nil {
+			return err
+		}
+
 		proj, err := project.Resolve(".")
 		if err != nil {
 			return err
@@ -28,12 +36,12 @@ var releaseCmd = &cobra.Command{
 		}
 		defer storage.Close(db)
 
-		if err := storage.ReleaseClaim(db, args[0], "manual"); err != nil {
+		if err := storage.ReleaseClaim(db, args[0], settings.DefaultAgent); err != nil {
 			return err
 		}
 
 		event := storage.Event{
-			Agent:     "manual",
+			Agent:     settings.DefaultAgent,
 			Kind:      "release",
 			Message:   "released " + args[0],
 			Path:      args[0],
@@ -43,6 +51,8 @@ var releaseCmd = &cobra.Command{
 		if err := storage.InsertEvent(db, event); err != nil {
 			return err
 		}
+
+		fmt.Println(output.Success("released " + args[0]))
 
 		return nil
 	},

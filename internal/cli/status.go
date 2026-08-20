@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 
+	"github.com/nudoxorg/loom/internal/output"
 	"github.com/nudoxorg/loom/internal/project"
 	"github.com/nudoxorg/loom/internal/storage"
 	"github.com/spf13/cobra"
@@ -32,14 +33,7 @@ var statusCmd = &cobra.Command{
 			return err
 		}
 
-		if len(claims) == 0 {
-			fmt.Println("no active claims")
-			return nil
-		}
-
-		for _, c := range claims {
-			fmt.Printf("%s  %s: %s\n", c.ClaimedAt.Format("2006-01-02 15:04"), c.Agent, c.Path)
-		}
+		fmt.Println(output.Claims(claims))
 
 		return nil
 	},
