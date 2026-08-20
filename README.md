@@ -87,6 +87,8 @@ loom status
 loom release internal/auth
 ```
 
+Re-claiming a path you already hold refreshes it instead of adding a duplicate row, and any claim left unreleased for 4 hours expires automatically — useful since automated claiming (e.g. from a hook) has no natural "done" signal the way running `loom release` does.
+
 ### Global context
 
 Global context is opt-in — a separate event log not tied to any project. Useful for cross-project notes or decisions that span multiple repos.
@@ -115,6 +117,23 @@ loom config list
 
 Supported keys: `default_agent` (used on every `log`/`claim`/`release`/`global log` unless overridden by MCP client identity — see below) and `default_limit` (default row count for `show`/`global show`, overridable per-call with `--limit`).
 
+### Hooks
+
+Agents forget to check Loom unless you remind them — so instead of relying on you to say it every session, Loom can generate project-scoped Claude Code hooks that do it automatically:
+
+```bash
+loom hooks install
+```
+
+This writes into the current project only — never `~/.claude/`, never anything outside the repo:
+
+- `.claude/hooks/loom-remind-sessionstart.sh` and `.claude/hooks/loom-remind-pretooluse.sh` — small, static scripts that just print a reminder
+- an entry in `.claude/settings.json` wiring them to the `SessionStart` and `PreToolUse` (`Write|Edit|MultiEdit`) hook events, merged into whatever's already in that file rather than overwriting it
+
+Both hooks only inject a static reminder into context — "this project uses Loom, use the MCP tools" — pointing the agent at `loom_status`/`loom_claim`/etc. They never call `loom` themselves. `SessionStart` fires once per session; `PreToolUse` fires again before every file edit, so the reminder survives context drift instead of only being said once at the top and forgotten.
+
+Safe to re-run: an unchanged script isn't rewritten, and an event already wired to Loom's hook isn't duplicated. Also available as the `loom_hooks_install` MCP tool, so an agent can set this up for a project itself when asked to.
+
 ---
 
 ## MCP server
@@ -138,11 +157,11 @@ Point your agent's MCP client config at the `loom` binary, e.g.:
 }
 ```
 
-Tools exposed: `loom_log`, `loom_show`, `loom_claim`, `loom_release`, `loom_status`, `loom_global_log`, `loom_global_show`, `loom_global_all`, `loom_config_get`, `loom_config_list`. (`loom config set` stays CLI-only — global settings changes require a human at the terminal.)
+Tools exposed: `loom_log`, `loom_show`, `loom_claim`, `loom_release`, `loom_status`, `loom_global_log`, `loom_global_show`, `loom_global_all`, `loom_config_get`, `loom_config_list`, `loom_hooks_install`. (`loom config set` stays CLI-only — global settings changes require a human at the terminal.)
 
 The server ships with detailed instructions in the MCP `initialize` response — the mental model, when to claim/release, and how to write a log message that's actually useful to the next agent. Any MCP-aware client surfaces these automatically, so there's nothing extra to read or configure.
 
-Events and claims created via MCP are attributed to the connecting client's own reported identity (e.g. `claude-code`, `cursor`) automatically, falling back to `default_agent` only if a client doesn't report one — no `agent` argument to pass, no config to keep in sync per client.
+Events and claims created via MCP are attributed to the connecting client's own reported identity (e.g. `claude-code`, `cursor`) automatically, falling back to `default_agent` only if a client doesn't report one — no `agent` argument to pass, no config to keep in sync per client. Since every client we've seen reports that same name for every session, the server also appends a random ID generated once per `loom mcp` process, so two concurrent sessions of the same client (e.g. two Claude Code windows) stay distinguishable instead of silently sharing — and potentially releasing — each other's claims.
 
 ---
 
@@ -158,7 +177,7 @@ Events and claims created via MCP are attributed to the connecting client's own 
 
 ## Roadmap
 
-Config and the local MCP server are done (see above). What's next, in priority order — see `IDEAS.md` for full detail on each:
+Config, the local MCP server, and project-scoped hooks are done (see above). What's next, in priority order — see `IDEAS.md` for full detail on each:
 
 1. **Agent-to-agent thought sharing** — let an agent ask *why* a path was implemented a certain way and get another agent's reasoning, not just a diff
 2. **AGENTS.md generation + Markdown export** — human/fallback-facing snapshots of project state for agents without MCP support, and for sharing or onboarding
