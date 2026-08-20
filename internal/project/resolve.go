@@ -17,7 +17,7 @@ func Resolve(startDir string) (*Project, error) {
 
 	slug := Slug(root)
 
-	dbPath, err := dbPathForSlug(slug)
+	dbPath, err := dbPathForSlug(root, slug)
 	if err != nil {
 		return nil, err
 	}
@@ -47,8 +47,10 @@ func findRoot(startDir string) (string, error) {
 }
 
 // dbPathForSlug builds ~/.loom/projects/<slug>/loom.db.
-// Ensures that project's subdirectory exists.
-func dbPathForSlug(slug string) (string, error) {
+// Ensures that project's subdirectory exists, and records the real
+// absolute path in a "root" sidecar file so ListAll can show a human
+// label instead of the (lossily) slugified directory name.
+func dbPathForSlug(root, slug string) (string, error) {
 	homeDir, err := HomeDir()
 	if err != nil {
 		return "", err
@@ -57,6 +59,11 @@ func dbPathForSlug(slug string) (string, error) {
 	projectsDir := filepath.Join(homeDir, "projects", slug)
 	if err := os.MkdirAll(projectsDir, 0o700); err != nil {
 		return "", fmt.Errorf("creating project dir: %w", err)
+	}
+
+	rootFile := filepath.Join(projectsDir, "root")
+	if err := os.WriteFile(rootFile, []byte(root), 0o600); err != nil {
+		return "", fmt.Errorf("writing project root marker: %w", err)
 	}
 
 	return filepath.Join(projectsDir, "loom.db"), nil
