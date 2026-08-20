@@ -30,6 +30,11 @@ var claimCmd = &cobra.Command{
 			return err
 		}
 
+		path, err := project.NormalizePath(proj.Root, args[0])
+		if err != nil {
+			return err
+		}
+
 		db, err := storage.Open(proj.DBPath)
 		if err != nil {
 			return err
@@ -37,7 +42,7 @@ var claimCmd = &cobra.Command{
 		defer storage.Close(db)
 
 		claim := storage.Claim{
-			Path:      args[0],
+			Path:      path,
 			Agent:     settings.DefaultAgent,
 			ClaimedAt: time.Now(),
 		}
@@ -48,15 +53,15 @@ var claimCmd = &cobra.Command{
 		}
 
 		if !created {
-			fmt.Println(output.Success("already claimed " + args[0]))
+			fmt.Println(output.Success("already claimed " + path))
 			return nil
 		}
 
 		event := storage.Event{
 			Agent:     settings.DefaultAgent,
 			Kind:      "claim",
-			Message:   "claimed " + args[0],
-			Path:      args[0],
+			Message:   "claimed " + path,
+			Path:      path,
 			Timestamp: time.Now(),
 		}
 
@@ -64,7 +69,7 @@ var claimCmd = &cobra.Command{
 			return err
 		}
 
-		fmt.Println(output.Success("claimed " + args[0]))
+		fmt.Println(output.Success("claimed " + path))
 
 		return nil
 	},

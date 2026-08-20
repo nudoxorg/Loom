@@ -30,21 +30,26 @@ var releaseCmd = &cobra.Command{
 			return err
 		}
 
+		path, err := project.NormalizePath(proj.Root, args[0])
+		if err != nil {
+			return err
+		}
+
 		db, err := storage.Open(proj.DBPath)
 		if err != nil {
 			return err
 		}
 		defer storage.Close(db)
 
-		if err := storage.ReleaseClaim(db, args[0], settings.DefaultAgent); err != nil {
+		if err := storage.ReleaseClaim(db, path, settings.DefaultAgent); err != nil {
 			return err
 		}
 
 		event := storage.Event{
 			Agent:     settings.DefaultAgent,
 			Kind:      "release",
-			Message:   "released " + args[0],
-			Path:      args[0],
+			Message:   "released " + path,
+			Path:      path,
 			Timestamp: time.Now(),
 		}
 
@@ -52,7 +57,7 @@ var releaseCmd = &cobra.Command{
 			return err
 		}
 
-		fmt.Println(output.Success("released " + args[0]))
+		fmt.Println(output.Success("released " + path))
 
 		return nil
 	},
