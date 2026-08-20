@@ -30,12 +30,10 @@ Everything lives under `~/.loom`, outside your project repo. Nothing touches you
 │
 ├── projects/
 │   └── <slug>/                    # slug = slugified absolute project path
-│       ├── loom.db                # SQLite — events + claims for this project
-│       └── settings.json          # per-project setting overrides (optional)
+│       └── loom.db                # SQLite — events + claims for this project
 │
 └── global/
-    ├── global.db                  # SQLite — the opt-in global knowledge hub
-    └── settings.json              # settings specific to global context
+    └── global.db                  # SQLite — the opt-in global knowledge hub
 ```
 
 **Project scope is the default.** Any `loom` command run from inside a project resolves its slug from the current directory (walking up to find `.git`) and reads/writes `projects/<slug>/loom.db`.
@@ -98,6 +96,15 @@ loom global log "switching all projects to Postgres"
 loom global show
 ```
 
+To see everything happening across *every* project Loom knows about at once — active claims and recent events, each labeled with which project they're from, merged with the global log above — use `loom global all`:
+
+```bash
+loom global all
+loom global all --limit 50
+```
+
+This doesn't require anything to be logged manually; it reads directly from every project's own `loom.db` under `~/.loom/projects/`.
+
 ### Config
 
 ```bash
@@ -105,6 +112,37 @@ loom config get <key>
 loom config set <key> <value>
 loom config list
 ```
+
+Supported keys: `default_agent` (used on every `log`/`claim`/`release`/`global log` unless overridden by MCP client identity — see below) and `default_limit` (default row count for `show`/`global show`, overridable per-call with `--limit`).
+
+---
+
+## MCP server
+
+Every Loom operation above is also exposed as an MCP tool over stdio — no network exposure, no accounts, same local trust model as the CLI. This is how agents use Loom directly instead of shelling out to `loom` themselves.
+
+```bash
+loom mcp
+```
+
+Point your agent's MCP client config at the `loom` binary, e.g.:
+
+```json
+{
+  "mcpServers": {
+    "loom": {
+      "command": "loom",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+Tools exposed: `loom_log`, `loom_show`, `loom_claim`, `loom_release`, `loom_status`, `loom_global_log`, `loom_global_show`, `loom_global_all`, `loom_config_get`, `loom_config_list`. (`loom config set` stays CLI-only — global settings changes require a human at the terminal.)
+
+The server ships with detailed instructions in the MCP `initialize` response — the mental model, when to claim/release, and how to write a log message that's actually useful to the next agent. Any MCP-aware client surfaces these automatically, so there's nothing extra to read or configure.
+
+Events and claims created via MCP are attributed to the connecting client's own reported identity (e.g. `claude-code`, `cursor`) automatically, falling back to `default_agent` only if a client doesn't report one — no `agent` argument to pass, no config to keep in sync per client.
 
 ---
 
@@ -120,11 +158,11 @@ loom config list
 
 ## Roadmap
 
-- **MCP server** — expose all Loom operations as MCP tools so agents can interact with Loom directly without running CLI commands
-- **AGENTS.md generation** — for agents that can't make live tool calls, Loom regenerates a section of `AGENTS.md` from current state on each update
-- **Daemon** — optional background process that watches the filesystem and git history to auto-log events without manual `loom log` calls
-- **Git integration** — automatically log events from git history, correlate claims with commits, surface recent changes as context
-- **Markdown export** — generate a human-readable snapshot of project context as a Markdown document, useful for sharing state or onboarding a new agent
+Config and the local MCP server are done (see above). What's next, in priority order — see `IDEAS.md` for full detail on each:
+
+1. **Agent-to-agent thought sharing** — let an agent ask *why* a path was implemented a certain way and get another agent's reasoning, not just a diff
+2. **AGENTS.md generation + Markdown export** — human/fallback-facing snapshots of project state for agents without MCP support, and for sharing or onboarding
+3. **Daemon** and **Git integration** — background automation for auto-logging events; nice-to-have, not load-bearing
 
 ---
 
