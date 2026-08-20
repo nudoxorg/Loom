@@ -100,9 +100,46 @@ var globalShowCmd = &cobra.Command{
 	},
 }
 
+var globalAllLimit int
+
+var globalAllCmd = &cobra.Command{
+	Use:   "all",
+	Short: "Show active claims and recent events across every known project",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := project.EnsureHome(); err != nil {
+			return err
+		}
+
+		settings, err := config.Load()
+		if err != nil {
+			return err
+		}
+
+		limit := globalAllLimit
+		if limit <= 0 {
+			limit = settings.DefaultLimit
+		}
+
+		claims, events, err := project.AggregateAll(limit)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println(output.Bold("ACTIVE CLAIMS"))
+		fmt.Println(output.GlobalClaims(claims))
+		fmt.Println()
+		fmt.Println(output.Bold("RECENT EVENTS"))
+		fmt.Println(output.GlobalEvents(events))
+
+		return nil
+	},
+}
+
 func init() {
 	globalShowCmd.Flags().IntVarP(&globalShowLimit, "limit", "l", 0, "number of events to show (default from config)")
+	globalAllCmd.Flags().IntVarP(&globalAllLimit, "limit", "l", 0, "number of events to show (default from config)")
 	globalCmd.AddCommand(globalLogCmd)
 	globalCmd.AddCommand(globalShowCmd)
+	globalCmd.AddCommand(globalAllCmd)
 	rootCmd.AddCommand(globalCmd)
 }
