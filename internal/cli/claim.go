@@ -42,8 +42,14 @@ var claimCmd = &cobra.Command{
 			ClaimedAt: time.Now(),
 		}
 
-		if err := storage.InsertClaim(db, claim); err != nil {
+		created, err := storage.InsertClaim(db, claim)
+		if err != nil {
 			return err
+		}
+
+		if !created {
+			fmt.Println(output.Success("already claimed " + args[0]))
+			return nil
 		}
 
 		event := storage.Event{

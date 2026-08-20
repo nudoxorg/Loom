@@ -54,7 +54,7 @@ func fakeProject(t *testing.T, slug string, withRoot bool, root string, eventTim
 		t.Fatalf("InsertEvent() error = %v", err)
 	}
 
-	if err := storage.InsertClaim(db, storage.Claim{
+	if _, err := storage.InsertClaim(db, storage.Claim{
 		Path:      "some/path",
 		Agent:     "test-agent",
 		ClaimedAt: eventTime,
