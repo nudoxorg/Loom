@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -110,6 +111,92 @@ func TestInstallPreservesExistingSettings(t *testing.T) {
 	}
 	if len(settings["PreToolUse"]) != 1 {
 		t.Fatalf("PreToolUse groups = %d, want 1", len(settings["PreToolUse"]))
+	}
+}
+
+func TestInstallGlobalWritesScriptAndSettings(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	changed, err := InstallGlobal()
+	if err != nil {
+		t.Fatalf("InstallGlobal() error = %v", err)
+	}
+	if !changed {
+		t.Fatalf("InstallGlobal() changed = false, want true on first run")
+	}
+
+	path := filepath.Join(home, ".claude", "hooks", globalRemindScript)
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat %s: %v", path, err)
+	}
+	if info.Mode()&0o111 == 0 {
+		t.Fatalf("%s is not executable: mode = %v", path, info.Mode())
+	}
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("reading %s: %v", path, err)
+	}
+	if !strings.Contains(string(content), "git rev-parse --is-inside-work-tree") {
+		t.Fatalf("global script does not gate on being inside a git repo:\n%s", content)
+	}
+
+	settings := readSettings(t, home)
+	if len(settings["SessionStart"]) != 1 {
+		t.Fatalf("SessionStart groups = %d, want 1", len(settings["SessionStart"]))
+	}
+	if settings["SessionStart"][0].Matcher != "" {
+		t.Fatalf("SessionStart matcher = %q, want empty (not tool-scoped)", settings["SessionStart"][0].Matcher)
+	}
+}
+
+func TestInstallGlobalIsIdempotent(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	if _, err := InstallGlobal(); err != nil {
+		t.Fatalf("first InstallGlobal() error = %v", err)
+	}
+
+	changed, err := InstallGlobal()
+	if err != nil {
+		t.Fatalf("second InstallGlobal() error = %v", err)
+	}
+	if changed {
+		t.Fatalf("second InstallGlobal() changed = true, want false")
+	}
+
+	settings := readSettings(t, home)
+	if len(settings["SessionStart"]) != 1 {
+		t.Fatalf("SessionStart groups = %d after second install, want 1 (no duplicate)", len(settings["SessionStart"]))
+	}
+}
+
+func TestInstallAndInstallGlobalDoNotInterfere(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	project := t.TempDir()
+
+	if _, err := Install(project); err != nil {
+		t.Fatalf("Install() error = %v", err)
+	}
+	if _, err := InstallGlobal(); err != nil {
+		t.Fatalf("InstallGlobal() error = %v", err)
+	}
+
+	projectSettings := readSettings(t, project)
+	if len(projectSettings["PreToolUse"]) != 1 {
+		t.Fatalf("project PreToolUse groups = %d, want 1", len(projectSettings["PreToolUse"]))
+	}
+
+	globalSettings := readSettings(t, home)
+	if len(globalSettings["PreToolUse"]) != 0 {
+		t.Fatalf("global settings picked up a PreToolUse hook, want none: %+v", globalSettings["PreToolUse"])
+	}
+	if len(globalSettings["SessionStart"]) != 1 {
+		t.Fatalf("global SessionStart groups = %d, want 1", len(globalSettings["SessionStart"]))
 	}
 }
 

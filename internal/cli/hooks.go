@@ -43,7 +43,28 @@ var hooksInstallCmd = &cobra.Command{
 	},
 }
 
+var hooksInstallGlobalCmd = &cobra.Command{
+	Use:   "install-global",
+	Short: "Install a global Claude Code hook that nudges agents to use Loom in any git repo",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		changed, err := hooks.InstallGlobal()
+		if err != nil {
+			return err
+		}
+
+		if !changed {
+			fmt.Println(output.Success("global Loom hook already installed, nothing to do"))
+			return nil
+		}
+
+		fmt.Println(output.Success("installed global Loom hook in ~/.claude/settings.json"))
+
+		return nil
+	},
+}
+
 func init() {
 	hooksCmd.AddCommand(hooksInstallCmd)
+	hooksCmd.AddCommand(hooksInstallGlobalCmd)
 	rootCmd.AddCommand(hooksCmd)
 }

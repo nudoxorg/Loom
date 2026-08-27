@@ -17,6 +17,13 @@ func registerHooksTools(s *server.MCPServer) {
 		),
 		handleHooksInstall,
 	)
+
+	s.AddTool(
+		mcp.NewTool("loom_hooks_install_global",
+			mcp.WithDescription("Install a single global Claude Code SessionStart hook (in the user's own ~/.claude/settings.json, not any project's) that nudges an agent to consider Loom whenever it's working inside a git repository"),
+		),
+		handleHooksInstallGlobal,
+	)
 }
 
 func handleHooksInstall(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -39,4 +46,17 @@ func handleHooksInstall(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallTool
 	}
 
 	return mcp.NewToolResultText("installed Loom hooks in .claude/settings.json"), nil
+}
+
+func handleHooksInstallGlobal(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	changed, err := hooks.InstallGlobal()
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	if !changed {
+		return mcp.NewToolResultText("global Loom hook already installed, nothing to do"), nil
+	}
+
+	return mcp.NewToolResultText("installed global Loom hook in ~/.claude/settings.json"), nil
 }
