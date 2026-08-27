@@ -11,7 +11,7 @@ import (
 
 var hooksCmd = &cobra.Command{
 	Use:   "hooks",
-	Short: "Manage coding-agent hooks (Claude Code, Codex CLI) that remind agents to use Loom",
+	Short: "Manage coding-agent hooks (Claude Code, Codex CLI, Cursor, Antigravity) that remind agents to use Loom",
 }
 
 var hooksInstallCmd = &cobra.Command{
@@ -112,10 +112,91 @@ var hooksInstallCodexGlobalCmd = &cobra.Command{
 	},
 }
 
+var hooksInstallCursorCmd = &cobra.Command{
+	Use:   "install-cursor",
+	Short: "Install project-scoped Cursor hooks that remind agents to use Loom",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := project.EnsureHome(); err != nil {
+			return err
+		}
+
+		proj, err := project.Resolve(".")
+		if err != nil {
+			return err
+		}
+
+		changed, err := hooks.InstallCursor(proj.Root)
+		if err != nil {
+			return err
+		}
+
+		if !changed {
+			fmt.Println(output.Success("Loom hooks already installed, nothing to do"))
+			return nil
+		}
+
+		fmt.Println(output.Success("installed Loom hooks in .cursor/hooks.json"))
+
+		return nil
+	},
+}
+
+var hooksInstallCursorGlobalCmd = &cobra.Command{
+	Use:   "install-cursor-global",
+	Short: "Install a global Cursor hook that nudges agents to use Loom in any git repo",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		changed, err := hooks.InstallCursorGlobal()
+		if err != nil {
+			return err
+		}
+
+		if !changed {
+			fmt.Println(output.Success("global Loom hook already installed, nothing to do"))
+			return nil
+		}
+
+		fmt.Println(output.Success("installed global Loom hook in ~/.cursor/hooks.json"))
+
+		return nil
+	},
+}
+
+var hooksInstallAntigravityCmd = &cobra.Command{
+	Use:   "install-antigravity",
+	Short: "Install project-scoped Antigravity hooks that remind agents to use Loom",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := project.EnsureHome(); err != nil {
+			return err
+		}
+
+		proj, err := project.Resolve(".")
+		if err != nil {
+			return err
+		}
+
+		changed, err := hooks.InstallAntigravity(proj.Root)
+		if err != nil {
+			return err
+		}
+
+		if !changed {
+			fmt.Println(output.Success("Loom hooks already installed, nothing to do"))
+			return nil
+		}
+
+		fmt.Println(output.Success("installed Loom hooks in .agents/hooks.json"))
+
+		return nil
+	},
+}
+
 func init() {
 	hooksCmd.AddCommand(hooksInstallCmd)
 	hooksCmd.AddCommand(hooksInstallGlobalCmd)
 	hooksCmd.AddCommand(hooksInstallCodexCmd)
 	hooksCmd.AddCommand(hooksInstallCodexGlobalCmd)
+	hooksCmd.AddCommand(hooksInstallCursorCmd)
+	hooksCmd.AddCommand(hooksInstallCursorGlobalCmd)
+	hooksCmd.AddCommand(hooksInstallAntigravityCmd)
 	rootCmd.AddCommand(hooksCmd)
 }

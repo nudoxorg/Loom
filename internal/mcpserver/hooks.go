@@ -38,6 +38,27 @@ func registerHooksTools(s *server.MCPServer) {
 		),
 		handleHooksInstallCodexGlobal,
 	)
+
+	s.AddTool(
+		mcp.NewTool("loom_hooks_install_cursor",
+			mcp.WithDescription("Install project-scoped Cursor hooks (sessionStart, postToolUse) that remind any agent working in this project to use Loom's MCP tools"),
+		),
+		handleHooksInstallCursor,
+	)
+
+	s.AddTool(
+		mcp.NewTool("loom_hooks_install_cursor_global",
+			mcp.WithDescription("Install a single global Cursor sessionStart hook (in the user's own ~/.cursor/hooks.json, not any project's) that nudges an agent to consider Loom whenever it's working inside a git repository"),
+		),
+		handleHooksInstallCursorGlobal,
+	)
+
+	s.AddTool(
+		mcp.NewTool("loom_hooks_install_antigravity",
+			mcp.WithDescription("Install a project-scoped Antigravity PreToolUse hook that reminds any agent working in this project to use Loom's MCP tools. There is no global variant: Antigravity has no session-lifecycle event to hang a one-time nudge on."),
+		),
+		handleHooksInstallAntigravity,
+	)
 }
 
 func handleHooksInstall(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -108,4 +129,61 @@ func handleHooksInstallCodexGlobal(_ context.Context, _ mcp.CallToolRequest) (*m
 	}
 
 	return mcp.NewToolResultText("installed global Loom hook in ~/.codex/hooks.json — open the Codex CLI and run /hooks to review and trust it before it'll fire"), nil
+}
+
+func handleHooksInstallCursor(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	if err := project.EnsureHome(); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	proj, err := project.Resolve(".")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	changed, err := hooks.InstallCursor(proj.Root)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	if !changed {
+		return mcp.NewToolResultText("Loom hooks already installed, nothing to do"), nil
+	}
+
+	return mcp.NewToolResultText("installed Loom hooks in .cursor/hooks.json"), nil
+}
+
+func handleHooksInstallCursorGlobal(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	changed, err := hooks.InstallCursorGlobal()
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	if !changed {
+		return mcp.NewToolResultText("global Loom hook already installed, nothing to do"), nil
+	}
+
+	return mcp.NewToolResultText("installed global Loom hook in ~/.cursor/hooks.json"), nil
+}
+
+func handleHooksInstallAntigravity(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	if err := project.EnsureHome(); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	proj, err := project.Resolve(".")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	changed, err := hooks.InstallAntigravity(proj.Root)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	if !changed {
+		return mcp.NewToolResultText("Loom hooks already installed, nothing to do"), nil
+	}
+
+	return mcp.NewToolResultText("installed Loom hooks in .agents/hooks.json"), nil
 }

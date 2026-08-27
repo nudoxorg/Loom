@@ -119,25 +119,30 @@ Supported keys: `default_agent` (used on every `log`/`claim`/`release`/`global l
 
 ### Hooks
 
-Agents forget to check Loom unless you remind them — so instead of relying on you to say it every session, Loom can generate project-scoped hooks that do it automatically, for both Claude Code and Codex CLI:
+Agents forget to check Loom unless you remind them — so instead of relying on you to say it every session, Loom can generate project-scoped hooks that do it automatically, for Claude Code, Codex CLI, Cursor, and Antigravity:
 
 ```bash
-loom hooks install                # Claude Code, project-scoped
-loom hooks install-global         # Claude Code, machine-wide
-loom hooks install-codex          # Codex CLI, project-scoped
-loom hooks install-codex-global   # Codex CLI, machine-wide
+loom hooks install                    # Claude Code, project-scoped
+loom hooks install-global             # Claude Code, machine-wide
+loom hooks install-codex              # Codex CLI, project-scoped
+loom hooks install-codex-global       # Codex CLI, machine-wide
+loom hooks install-cursor             # Cursor, project-scoped
+loom hooks install-cursor-global      # Cursor, machine-wide
+loom hooks install-antigravity        # Antigravity, project-scoped (no global variant — see below)
 ```
 
-Project-scoped installs write into the current project only — never `~/.claude/` or `~/.codex/`, never anything outside the repo:
+Project-scoped installs write into the current project only — never `~/.claude/`, `~/.codex/`, `~/.cursor/`, never anything outside the repo:
 
 - **Claude**: `.claude/hooks/loom-remind-*.sh` plus an entry in `.claude/settings.json` wiring them to the `SessionStart` and `PreToolUse` (`Write|Edit|MultiEdit`) hook events, merged into whatever's already in that file rather than overwriting it.
 - **Codex**: `.codex/hooks/loom-remind-*.sh` plus an entry in a dedicated `.codex/hooks.json` wiring them to `SessionStart` and `PreToolUse` (`apply_patch` — Codex routes every file edit through one tool, unlike Claude's `Write`/`Edit`/`MultiEdit` split). Codex discovers hooks from `hooks.json` or inline `[hooks]` in `config.toml`; Loom always writes the dedicated file and never touches `config.toml`.
+- **Cursor**: `.cursor/hooks/loom-remind-*.sh` plus an entry in a dedicated `.cursor/hooks.json` wiring them to `sessionStart` and `postToolUse` (matcher `Write`). Cursor's `preToolUse` hook has no field for injecting a non-blocking reminder — only `postToolUse` supports that — so Cursor's per-edit nudge fires just after an edit rather than just before it, unlike the other three tools.
+- **Antigravity**: `.agents/hooks/loom-remind-pretooluse.sh` plus a dedicated named hook group (`"loom-reminder"`) in `.agents/hooks.json`, wired to `PreToolUse` matched against Antigravity's three file-mutation tools (`write_to_file`, `replace_file_content`, `multi_replace_file_content`). **No `install-antigravity-global`** — Antigravity has no session-lifecycle event at all (only `PreToolUse`/`PostToolUse`/`PreInvocation`/`PostInvocation`/`Stop`), so there's no honest way to build the lightweight one-time nudge the other three tools' global hooks are. **Also unverified:** Antigravity's `PreToolUse` output only documents `reason` as surfacing to the agent on a `deny`/`ask` decision, not `allow` — Loom's hook uses `decision: "allow"` with `reason` set to the reminder text, but whether that text actually reaches the agent hasn't been confirmed against a live Antigravity session. If it doesn't, the hook is harmlessly inert (installs cleanly, never errors, just doesn't visibly nudge) rather than broken.
 
-Both hooks only inject a static reminder into context — "this project uses Loom, use the MCP tools" — pointing the agent at `loom_status`/`loom_claim`/etc. They never call `loom` themselves. `SessionStart` fires once per session; `PreToolUse` fires again before every file edit, so the reminder survives context drift instead of only being said once at the top and forgotten.
+Every hook only injects a static reminder into context — "this project uses Loom, use the MCP tools" — pointing the agent at `loom_status`/`loom_claim`/etc. None of them call `loom` themselves. Session-lifecycle events fire once per session; per-edit events fire again before (or, for Cursor, just after) every file edit, so the reminder survives context drift instead of only being said once at the top and forgotten.
 
-Safe to re-run: an unchanged script isn't rewritten, and an event already wired to Loom's hook isn't duplicated. Merging into an existing hooks file never touches anything else already there — including fields Loom itself doesn't set, like Codex's `statusMessage`/`timeout`/`async`/`additionalContextLimit` on some other hook's own entries. Also available as MCP tools (`loom_hooks_install`, `loom_hooks_install_global`, `loom_hooks_install_codex`, `loom_hooks_install_codex_global`), so an agent can set this up for a project itself when asked to.
+Safe to re-run: an unchanged script isn't rewritten, and a hook already wired for Loom isn't duplicated. Merging into an existing hooks file never touches anything else already there — including fields Loom itself doesn't set, like Codex's/Cursor's `statusMessage`/`timeout`/`async`/`additionalContextLimit`/`loop_limit`/`failClosed` on some other hook's own entries, or another tool's own named hook group in Antigravity's `hooks.json`. Also available as MCP tools (`loom_hooks_install`, `loom_hooks_install_global`, `loom_hooks_install_codex`, `loom_hooks_install_codex_global`, `loom_hooks_install_cursor`, `loom_hooks_install_cursor_global`, `loom_hooks_install_antigravity`), so an agent can set this up for a project itself when asked to.
 
-**Codex-specific:** unlike Claude Code, a freshly installed or changed project-local Codex hook won't actually fire until you review and trust it — run `/hooks` in the Codex CLI. That's a manual step on Codex's side Loom can't perform for you; the install command's own output reminds you of it.
+**Codex-specific:** unlike Claude Code and Cursor, a freshly installed or changed project-local Codex hook won't actually fire until you review and trust it — run `/hooks` in the Codex CLI. That's a manual step on Codex's side Loom can't perform for you; the install command's own output reminds you of it.
 
 ---
 
@@ -162,7 +167,7 @@ Point your agent's MCP client config at the `loom` binary, e.g.:
 }
 ```
 
-Tools exposed: `loom_log`, `loom_show`, `loom_claim`, `loom_release`, `loom_status`, `loom_global_log`, `loom_global_show`, `loom_global_all`, `loom_config_get`, `loom_config_list`, `loom_hooks_install`, `loom_hooks_install_global`, `loom_hooks_install_codex`, `loom_hooks_install_codex_global`. (`loom config set` stays CLI-only — global settings changes require a human at the terminal.)
+Tools exposed: `loom_log`, `loom_show`, `loom_claim`, `loom_release`, `loom_status`, `loom_global_log`, `loom_global_show`, `loom_global_all`, `loom_config_get`, `loom_config_list`, `loom_hooks_install`, `loom_hooks_install_global`, `loom_hooks_install_codex`, `loom_hooks_install_codex_global`, `loom_hooks_install_cursor`, `loom_hooks_install_cursor_global`, `loom_hooks_install_antigravity`. (`loom config set` stays CLI-only — global settings changes require a human at the terminal.)
 
 The server ships with detailed instructions in the MCP `initialize` response — the mental model, when to claim/release, and how to write a log message that's actually useful to the next agent. Any MCP-aware client surfaces these automatically, so there's nothing extra to read or configure.
 
