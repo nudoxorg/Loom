@@ -30,7 +30,7 @@ func TestInstallWritesScriptsAndSettings(t *testing.T) {
 		}
 	}
 
-	settings := readSettings(t, root)
+	settings := readHooksFile(t, filepath.Join(root, ".claude", "settings.json"))
 	if len(settings["PreToolUse"]) != 1 {
 		t.Fatalf("PreToolUse groups = %d, want 1", len(settings["PreToolUse"]))
 	}
@@ -57,7 +57,7 @@ func TestInstallIsIdempotent(t *testing.T) {
 		t.Fatalf("second Install() changed = true, want false")
 	}
 
-	settings := readSettings(t, root)
+	settings := readHooksFile(t, filepath.Join(root, ".claude", "settings.json"))
 	if len(settings["PreToolUse"]) != 1 {
 		t.Fatalf("PreToolUse groups = %d after second install, want 1 (no duplicate)", len(settings["PreToolUse"]))
 	}
@@ -105,7 +105,7 @@ func TestInstallPreservesExistingSettings(t *testing.T) {
 		t.Fatalf("model = %q, want %q (must survive install)", model, "opus")
 	}
 
-	settings := readSettings(t, root)
+	settings := readHooksFile(t, filepath.Join(root, ".claude", "settings.json"))
 	if len(settings["Stop"]) != 1 || settings["Stop"][0].Hooks[0].Command != "some-other-tool" {
 		t.Fatalf("existing Stop hook was not preserved: %+v", settings["Stop"])
 	}
@@ -143,7 +143,7 @@ func TestInstallGlobalWritesScriptAndSettings(t *testing.T) {
 		t.Fatalf("global script does not gate on being inside a git repo:\n%s", content)
 	}
 
-	settings := readSettings(t, home)
+	settings := readHooksFile(t, filepath.Join(home, ".claude", "settings.json"))
 	if len(settings["SessionStart"]) != 1 {
 		t.Fatalf("SessionStart groups = %d, want 1", len(settings["SessionStart"]))
 	}
@@ -168,7 +168,7 @@ func TestInstallGlobalIsIdempotent(t *testing.T) {
 		t.Fatalf("second InstallGlobal() changed = true, want false")
 	}
 
-	settings := readSettings(t, home)
+	settings := readHooksFile(t, filepath.Join(home, ".claude", "settings.json"))
 	if len(settings["SessionStart"]) != 1 {
 		t.Fatalf("SessionStart groups = %d after second install, want 1 (no duplicate)", len(settings["SessionStart"]))
 	}
@@ -186,12 +186,12 @@ func TestInstallAndInstallGlobalDoNotInterfere(t *testing.T) {
 		t.Fatalf("InstallGlobal() error = %v", err)
 	}
 
-	projectSettings := readSettings(t, project)
+	projectSettings := readHooksFile(t, filepath.Join(project, ".claude", "settings.json"))
 	if len(projectSettings["PreToolUse"]) != 1 {
 		t.Fatalf("project PreToolUse groups = %d, want 1", len(projectSettings["PreToolUse"]))
 	}
 
-	globalSettings := readSettings(t, home)
+	globalSettings := readHooksFile(t, filepath.Join(home, ".claude", "settings.json"))
 	if len(globalSettings["PreToolUse"]) != 0 {
 		t.Fatalf("global settings picked up a PreToolUse hook, want none: %+v", globalSettings["PreToolUse"])
 	}
@@ -200,22 +200,22 @@ func TestInstallAndInstallGlobalDoNotInterfere(t *testing.T) {
 	}
 }
 
-func readSettings(t *testing.T, root string) map[string][]hookMatcher {
+func readHooksFile(t *testing.T, path string) map[string][]hookMatcher {
 	t.Helper()
 
-	data, err := os.ReadFile(filepath.Join(root, ".claude", "settings.json"))
+	data, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf("reading settings.json: %v", err)
+		t.Fatalf("reading %s: %v", path, err)
 	}
 
 	var raw map[string]json.RawMessage
 	if err := json.Unmarshal(data, &raw); err != nil {
-		t.Fatalf("parsing settings.json: %v", err)
+		t.Fatalf("parsing %s: %v", path, err)
 	}
 
 	var hooksByEvent map[string][]hookMatcher
 	if err := json.Unmarshal(raw["hooks"], &hooksByEvent); err != nil {
-		t.Fatalf("parsing hooks: %v", err)
+		t.Fatalf("parsing hooks in %s: %v", path, err)
 	}
 
 	return hooksByEvent

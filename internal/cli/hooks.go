@@ -11,7 +11,7 @@ import (
 
 var hooksCmd = &cobra.Command{
 	Use:   "hooks",
-	Short: "Manage Claude Code hooks for this project",
+	Short: "Manage coding-agent hooks (Claude Code, Codex CLI) that remind agents to use Loom",
 }
 
 var hooksInstallCmd = &cobra.Command{
@@ -63,8 +63,59 @@ var hooksInstallGlobalCmd = &cobra.Command{
 	},
 }
 
+var hooksInstallCodexCmd = &cobra.Command{
+	Use:   "install-codex",
+	Short: "Install project-scoped Codex CLI hooks that remind agents to use Loom",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := project.EnsureHome(); err != nil {
+			return err
+		}
+
+		proj, err := project.Resolve(".")
+		if err != nil {
+			return err
+		}
+
+		changed, err := hooks.InstallCodex(proj.Root)
+		if err != nil {
+			return err
+		}
+
+		if !changed {
+			fmt.Println(output.Success("Loom hooks already installed, nothing to do"))
+			return nil
+		}
+
+		fmt.Println(output.Success("installed Loom hooks in .codex/hooks.json — open the Codex CLI and run /hooks to review and trust them before they'll fire"))
+
+		return nil
+	},
+}
+
+var hooksInstallCodexGlobalCmd = &cobra.Command{
+	Use:   "install-codex-global",
+	Short: "Install a global Codex CLI hook that nudges agents to use Loom in any git repo",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		changed, err := hooks.InstallCodexGlobal()
+		if err != nil {
+			return err
+		}
+
+		if !changed {
+			fmt.Println(output.Success("global Loom hook already installed, nothing to do"))
+			return nil
+		}
+
+		fmt.Println(output.Success("installed global Loom hook in ~/.codex/hooks.json — open the Codex CLI and run /hooks to review and trust it before it'll fire"))
+
+		return nil
+	},
+}
+
 func init() {
 	hooksCmd.AddCommand(hooksInstallCmd)
 	hooksCmd.AddCommand(hooksInstallGlobalCmd)
+	hooksCmd.AddCommand(hooksInstallCodexCmd)
+	hooksCmd.AddCommand(hooksInstallCodexGlobalCmd)
 	rootCmd.AddCommand(hooksCmd)
 }

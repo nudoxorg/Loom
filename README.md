@@ -119,20 +119,25 @@ Supported keys: `default_agent` (used on every `log`/`claim`/`release`/`global l
 
 ### Hooks
 
-Agents forget to check Loom unless you remind them — so instead of relying on you to say it every session, Loom can generate project-scoped Claude Code hooks that do it automatically:
+Agents forget to check Loom unless you remind them — so instead of relying on you to say it every session, Loom can generate project-scoped hooks that do it automatically, for both Claude Code and Codex CLI:
 
 ```bash
-loom hooks install
+loom hooks install                # Claude Code, project-scoped
+loom hooks install-global         # Claude Code, machine-wide
+loom hooks install-codex          # Codex CLI, project-scoped
+loom hooks install-codex-global   # Codex CLI, machine-wide
 ```
 
-This writes into the current project only — never `~/.claude/`, never anything outside the repo:
+Project-scoped installs write into the current project only — never `~/.claude/` or `~/.codex/`, never anything outside the repo:
 
-- `.claude/hooks/loom-remind-sessionstart.sh` and `.claude/hooks/loom-remind-pretooluse.sh` — small, static scripts that just print a reminder
-- an entry in `.claude/settings.json` wiring them to the `SessionStart` and `PreToolUse` (`Write|Edit|MultiEdit`) hook events, merged into whatever's already in that file rather than overwriting it
+- **Claude**: `.claude/hooks/loom-remind-*.sh` plus an entry in `.claude/settings.json` wiring them to the `SessionStart` and `PreToolUse` (`Write|Edit|MultiEdit`) hook events, merged into whatever's already in that file rather than overwriting it.
+- **Codex**: `.codex/hooks/loom-remind-*.sh` plus an entry in a dedicated `.codex/hooks.json` wiring them to `SessionStart` and `PreToolUse` (`apply_patch` — Codex routes every file edit through one tool, unlike Claude's `Write`/`Edit`/`MultiEdit` split). Codex discovers hooks from `hooks.json` or inline `[hooks]` in `config.toml`; Loom always writes the dedicated file and never touches `config.toml`.
 
 Both hooks only inject a static reminder into context — "this project uses Loom, use the MCP tools" — pointing the agent at `loom_status`/`loom_claim`/etc. They never call `loom` themselves. `SessionStart` fires once per session; `PreToolUse` fires again before every file edit, so the reminder survives context drift instead of only being said once at the top and forgotten.
 
-Safe to re-run: an unchanged script isn't rewritten, and an event already wired to Loom's hook isn't duplicated. Also available as the `loom_hooks_install` MCP tool, so an agent can set this up for a project itself when asked to.
+Safe to re-run: an unchanged script isn't rewritten, and an event already wired to Loom's hook isn't duplicated. Merging into an existing hooks file never touches anything else already there — including fields Loom itself doesn't set, like Codex's `statusMessage`/`timeout`/`async`/`additionalContextLimit` on some other hook's own entries. Also available as MCP tools (`loom_hooks_install`, `loom_hooks_install_global`, `loom_hooks_install_codex`, `loom_hooks_install_codex_global`), so an agent can set this up for a project itself when asked to.
+
+**Codex-specific:** unlike Claude Code, a freshly installed or changed project-local Codex hook won't actually fire until you review and trust it — run `/hooks` in the Codex CLI. That's a manual step on Codex's side Loom can't perform for you; the install command's own output reminds you of it.
 
 ---
 
@@ -157,7 +162,7 @@ Point your agent's MCP client config at the `loom` binary, e.g.:
 }
 ```
 
-Tools exposed: `loom_log`, `loom_show`, `loom_claim`, `loom_release`, `loom_status`, `loom_global_log`, `loom_global_show`, `loom_global_all`, `loom_config_get`, `loom_config_list`, `loom_hooks_install`. (`loom config set` stays CLI-only — global settings changes require a human at the terminal.)
+Tools exposed: `loom_log`, `loom_show`, `loom_claim`, `loom_release`, `loom_status`, `loom_global_log`, `loom_global_show`, `loom_global_all`, `loom_config_get`, `loom_config_list`, `loom_hooks_install`, `loom_hooks_install_global`, `loom_hooks_install_codex`, `loom_hooks_install_codex_global`. (`loom config set` stays CLI-only — global settings changes require a human at the terminal.)
 
 The server ships with detailed instructions in the MCP `initialize` response — the mental model, when to claim/release, and how to write a log message that's actually useful to the next agent. Any MCP-aware client surfaces these automatically, so there's nothing extra to read or configure.
 

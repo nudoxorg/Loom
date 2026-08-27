@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "apply_patch",
+        "hooks": [
+          {
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/loom-remind-pretooluse.sh\"",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/loom-remind-sessionstart.sh\"",
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  }
+}
