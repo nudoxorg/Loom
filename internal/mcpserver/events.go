@@ -16,16 +16,20 @@ import (
 
 func registerEventTools(s *server.MCPServer) {
 	s.AddTool(
-		mcp.NewTool("loom_log",
+		mcp.NewTool(
+			"loom_log",
 			mcp.WithDescription("Log an event to the current project's Loom history"),
+			mcp.WithString("cwd", mcp.Required(), mcp.Description(cwdDescription)),
 			mcp.WithString("message", mcp.Required(), mcp.Description("what happened")),
 		),
 		handleLog,
 	)
 
 	s.AddTool(
-		mcp.NewTool("loom_show",
+		mcp.NewTool(
+			"loom_show",
 			mcp.WithDescription("Show recent events for the current project"),
+			mcp.WithString("cwd", mcp.Required(), mcp.Description(cwdDescription)),
 			mcp.WithNumber("limit", mcp.Description("max events to return (default from config)")),
 		),
 		handleShow,
@@ -33,6 +37,11 @@ func registerEventTools(s *server.MCPServer) {
 }
 
 func handleLog(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	cwd, err := req.RequireString("cwd")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
 	message, err := req.RequireString("message")
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
@@ -47,7 +56,7 @@ func handleLog(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResul
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	proj, err := project.Resolve(".")
+	proj, err := project.Resolve(cwd)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -73,6 +82,11 @@ func handleLog(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResul
 }
 
 func handleShow(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	cwd, err := req.RequireString("cwd")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
 	if err := project.EnsureHome(); err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -82,7 +96,7 @@ func handleShow(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	proj, err := project.Resolve(".")
+	proj, err := project.Resolve(cwd)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
