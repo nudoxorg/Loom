@@ -16,7 +16,7 @@ Loom tracks two things:
 
 **Claims** are temporary flags. When an agent starts working on a file or path, it claims it. Other agents can see what's claimed and avoid stepping on in-progress work. When the work is done, the claim is released — but it stays in the event history. Claims answer the question: *what is being worked on right now?*
 
-Both are scoped to the project by default. Loom determines the project root by walking up from the current directory looking for a `.git` folder — the same way most tools do. No init step required.
+Both are scoped to the project by default. Loom determines the project root by walking up from the current directory looking for a `.git` folder — the same way most tools do. If no `.git` is found anywhere above it, that directory itself becomes the project root instead of erroring, so non-git work still gets its own history. No init step required.
 
 ---
 
@@ -36,7 +36,7 @@ Everything lives under `~/.loom`, outside your project repo. Nothing touches you
     └── global.db                  # SQLite — the opt-in global knowledge hub
 ```
 
-**Project scope is the default.** Any `loom` command run from inside a project resolves its slug from the current directory (walking up to find `.git`) and reads/writes `projects/<slug>/loom.db`.
+**Project scope is the default.** Any `loom` command run from inside a project resolves its slug from the current directory (walking up to find `.git`, or falling back to the current directory itself if none is found) and reads/writes `projects/<slug>/loom.db`.
 
 **Global scope is opt-in only.** `loom global log` / `loom global show` explicitly target `global/global.db` — it is never touched by default project-scoped commands.
 
@@ -169,7 +169,9 @@ Point your agent's MCP client config at the `loom` binary, e.g.:
 
 Tools exposed: `loom_log`, `loom_show`, `loom_claim`, `loom_release`, `loom_status`, `loom_global_log`, `loom_global_show`, `loom_global_all`, `loom_config_get`, `loom_config_list`, `loom_hooks_install`, `loom_hooks_install_global`, `loom_hooks_install_codex`, `loom_hooks_install_codex_global`, `loom_hooks_install_cursor`, `loom_hooks_install_cursor_global`, `loom_hooks_install_antigravity`. (`loom config set` stays CLI-only — global settings changes require a human at the terminal.)
 
-The server ships with detailed instructions in the MCP `initialize` response — the mental model, when to claim/release, and how to write a log message that's actually useful to the next agent. Any MCP-aware client surfaces these automatically, so there's nothing extra to read or configure.
+**Every project-scoped tool requires a `cwd` argument.** `loom mcp` is a long-lived process serving one client for the whole session, and its own working directory never changes after it starts — so it can't infer where the agent is currently working just by calling `os.Getwd()`, especially once the agent has `cd`'d somewhere else (e.g. into a git repo nested under the non-git directory the session started in). Each call to `loom_log`, `loom_show`, `loom_claim`, `loom_release`, `loom_status`, or the project-scoped `loom_hooks_install*` tools must pass the agent's actual current working directory as `cwd`, and Loom resolves the project from that (git walk-up, or an ad-hoc root — see above). The global and config tools don't take `cwd`; they're never project-scoped.
+
+The server ships with detailed instructions in the MCP `initialize` response — the mental model, when to claim/release, how to pass `cwd` correctly, and how to write a log message that's actually useful to the next agent. Any MCP-aware client surfaces these automatically, so there's nothing extra to read or configure.
 
 Events and claims created via MCP are attributed to the connecting client's own reported identity (e.g. `claude-code`, `cursor`) automatically, falling back to `default_agent` only if a client doesn't report one — no `agent` argument to pass, no config to keep in sync per client. Since every client we've seen reports that same name for every session, the server also appends a random ID generated once per `loom mcp` process, so two concurrent sessions of the same client (e.g. two Claude Code windows) stay distinguishable instead of silently sharing — and potentially releasing — each other's claims.
 

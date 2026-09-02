@@ -16,30 +16,41 @@ import (
 
 func registerClaimTools(s *server.MCPServer) {
 	s.AddTool(
-		mcp.NewTool("loom_claim",
+		mcp.NewTool(
+			"loom_claim",
 			mcp.WithDescription("Claim a path in the current project as in progress"),
+			mcp.WithString("cwd", mcp.Required(), mcp.Description(cwdDescription)),
 			mcp.WithString("path", mcp.Required(), mcp.Description("the file or directory path being worked on")),
 		),
 		handleClaim,
 	)
 
 	s.AddTool(
-		mcp.NewTool("loom_release",
+		mcp.NewTool(
+			"loom_release",
 			mcp.WithDescription("Release a previously claimed path"),
+			mcp.WithString("cwd", mcp.Required(), mcp.Description(cwdDescription)),
 			mcp.WithString("path", mcp.Required(), mcp.Description("the path to release")),
 		),
 		handleRelease,
 	)
 
 	s.AddTool(
-		mcp.NewTool("loom_status",
+		mcp.NewTool(
+			"loom_status",
 			mcp.WithDescription("Show currently active claims for the current project"),
+			mcp.WithString("cwd", mcp.Required(), mcp.Description(cwdDescription)),
 		),
 		handleStatus,
 	)
 }
 
 func handleClaim(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	cwd, err := req.RequireString("cwd")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
 	path, err := req.RequireString("path")
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
@@ -54,7 +65,7 @@ func handleClaim(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRes
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	proj, err := project.Resolve(".")
+	proj, err := project.Resolve(cwd)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -103,6 +114,11 @@ func handleClaim(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolRes
 }
 
 func handleRelease(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	cwd, err := req.RequireString("cwd")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
 	path, err := req.RequireString("path")
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
@@ -117,7 +133,7 @@ func handleRelease(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	proj, err := project.Resolve(".")
+	proj, err := project.Resolve(cwd)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -154,12 +170,17 @@ func handleRelease(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 	return mcp.NewToolResultText("released " + path), nil
 }
 
-func handleStatus(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func handleStatus(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	cwd, err := req.RequireString("cwd")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
 	if err := project.EnsureHome(); err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	proj, err := project.Resolve(".")
+	proj, err := project.Resolve(cwd)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}

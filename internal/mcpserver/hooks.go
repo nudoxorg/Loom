@@ -12,61 +12,77 @@ import (
 
 func registerHooksTools(s *server.MCPServer) {
 	s.AddTool(
-		mcp.NewTool("loom_hooks_install",
+		mcp.NewTool(
+			"loom_hooks_install",
 			mcp.WithDescription("Install project-scoped Claude Code hooks (SessionStart, PreToolUse) that remind any agent working in this project to use Loom's MCP tools"),
+			mcp.WithString("cwd", mcp.Required(), mcp.Description(cwdDescription)),
 		),
 		handleHooksInstall,
 	)
 
 	s.AddTool(
-		mcp.NewTool("loom_hooks_install_global",
+		mcp.NewTool(
+			"loom_hooks_install_global",
 			mcp.WithDescription("Install a single global Claude Code SessionStart hook (in the user's own ~/.claude/settings.json, not any project's) that nudges an agent to consider Loom whenever it's working inside a git repository"),
 		),
 		handleHooksInstallGlobal,
 	)
 
 	s.AddTool(
-		mcp.NewTool("loom_hooks_install_codex",
+		mcp.NewTool(
+			"loom_hooks_install_codex",
 			mcp.WithDescription("Install project-scoped Codex CLI hooks (SessionStart, PreToolUse) that remind any agent working in this project to use Loom's MCP tools"),
+			mcp.WithString("cwd", mcp.Required(), mcp.Description(cwdDescription)),
 		),
 		handleHooksInstallCodex,
 	)
 
 	s.AddTool(
-		mcp.NewTool("loom_hooks_install_codex_global",
+		mcp.NewTool(
+			"loom_hooks_install_codex_global",
 			mcp.WithDescription("Install a single global Codex CLI SessionStart hook (in the user's own ~/.codex/hooks.json, not any project's) that nudges an agent to consider Loom whenever it's working inside a git repository"),
 		),
 		handleHooksInstallCodexGlobal,
 	)
 
 	s.AddTool(
-		mcp.NewTool("loom_hooks_install_cursor",
+		mcp.NewTool(
+			"loom_hooks_install_cursor",
 			mcp.WithDescription("Install project-scoped Cursor hooks (sessionStart, postToolUse) that remind any agent working in this project to use Loom's MCP tools"),
+			mcp.WithString("cwd", mcp.Required(), mcp.Description(cwdDescription)),
 		),
 		handleHooksInstallCursor,
 	)
 
 	s.AddTool(
-		mcp.NewTool("loom_hooks_install_cursor_global",
+		mcp.NewTool(
+			"loom_hooks_install_cursor_global",
 			mcp.WithDescription("Install a single global Cursor sessionStart hook (in the user's own ~/.cursor/hooks.json, not any project's) that nudges an agent to consider Loom whenever it's working inside a git repository"),
 		),
 		handleHooksInstallCursorGlobal,
 	)
 
 	s.AddTool(
-		mcp.NewTool("loom_hooks_install_antigravity",
+		mcp.NewTool(
+			"loom_hooks_install_antigravity",
 			mcp.WithDescription("Install a project-scoped Antigravity PreToolUse hook that reminds any agent working in this project to use Loom's MCP tools. There is no global variant: Antigravity has no session-lifecycle event to hang a one-time nudge on."),
+			mcp.WithString("cwd", mcp.Required(), mcp.Description(cwdDescription)),
 		),
 		handleHooksInstallAntigravity,
 	)
 }
 
-func handleHooksInstall(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func handleHooksInstall(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	cwd, err := req.RequireString("cwd")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
 	if err := project.EnsureHome(); err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	proj, err := project.Resolve(".")
+	proj, err := project.Resolve(cwd)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -96,12 +112,17 @@ func handleHooksInstallGlobal(_ context.Context, _ mcp.CallToolRequest) (*mcp.Ca
 	return mcp.NewToolResultText("installed global Loom hook in ~/.claude/settings.json"), nil
 }
 
-func handleHooksInstallCodex(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func handleHooksInstallCodex(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	cwd, err := req.RequireString("cwd")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
 	if err := project.EnsureHome(); err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	proj, err := project.Resolve(".")
+	proj, err := project.Resolve(cwd)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -131,12 +152,17 @@ func handleHooksInstallCodexGlobal(_ context.Context, _ mcp.CallToolRequest) (*m
 	return mcp.NewToolResultText("installed global Loom hook in ~/.codex/hooks.json — open the Codex CLI and run /hooks to review and trust it before it'll fire"), nil
 }
 
-func handleHooksInstallCursor(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func handleHooksInstallCursor(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	cwd, err := req.RequireString("cwd")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
 	if err := project.EnsureHome(); err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	proj, err := project.Resolve(".")
+	proj, err := project.Resolve(cwd)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -166,12 +192,17 @@ func handleHooksInstallCursorGlobal(_ context.Context, _ mcp.CallToolRequest) (*
 	return mcp.NewToolResultText("installed global Loom hook in ~/.cursor/hooks.json"), nil
 }
 
-func handleHooksInstallAntigravity(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func handleHooksInstallAntigravity(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	cwd, err := req.RequireString("cwd")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
 	if err := project.EnsureHome(); err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	proj, err := project.Resolve(".")
+	proj, err := project.Resolve(cwd)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}

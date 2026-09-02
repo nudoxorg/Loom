@@ -9,17 +9,17 @@ const instructions = `Loom gives coding agents shared awareness of a project: wh
 MENTAL MODEL
 - Events are a permanent, append-only history: what happened and why. They're the project's memory — anything another agent (or a future you) would want to know later belongs here.
 - Claims are temporary "I'm working on this" flags on a path. They are advisory, not a lock: Loom does not block anyone from editing a claimed path. Claiming only makes the conflict visible so agents can coordinate instead of silently colliding. The discipline is on you.
-- Everything project-scoped (events, claims) is bound automatically to the project this server was started in, based on its working directory. You never pass a project identifier.
+- Every project-scoped tool takes a required cwd argument: your actual current working directory right now, not wherever the session started. This server is a long-lived process whose own working directory never changes, so it cannot infer where you are — you must state it on every call. Loom resolves the project from cwd by walking up for a .git folder, or, if none is found, treating cwd itself as an ad-hoc project root. You never pass a project identifier directly.
 - Every call is attributed automatically to your own client identity (e.g. "claude-code", "cursor"). There is no "agent" argument on any tool, and nothing to configure.
 
 FULL TOOL REFERENCE
 
-Project-scoped (this project only):
-- loom_log(message) — record a permanent event.
-- loom_show(limit?) — recent events for this project, newest first. Omit limit to use the configured default (usually 20).
-- loom_claim(path) — flag a path as in progress.
-- loom_release(path) — clear a claim you made.
-- loom_status() — currently active claims for this project.
+Project-scoped (this project only — cwd is required on every one of these):
+- loom_log(cwd, message) — record a permanent event.
+- loom_show(cwd, limit?) — recent events for this project, newest first. Omit limit to use the configured default (usually 20).
+- loom_claim(cwd, path) — flag a path as in progress.
+- loom_release(cwd, path) — clear a claim you made.
+- loom_status(cwd) — currently active claims for this project.
 
 Cross-project:
 - loom_global_log(message) — a note that is not scoped to any one project, e.g. "migrating every service to Postgres." A separate stream from loom_log — writing here does not show up in loom_show.

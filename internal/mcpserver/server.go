@@ -14,6 +14,12 @@ import (
 
 const version = "0.1.0"
 
+// cwdDescription is shared by every project-scoped tool's required "cwd"
+// argument. The MCP server is a long-lived process whose own working
+// directory never changes, so it cannot infer where the calling agent is
+// currently working — the agent must state it explicitly on every call.
+const cwdDescription = "the agent's actual current working directory right now (not where the session started) - Loom resolves the project from this"
+
 // instanceID distinguishes this server process from any other Loom MCP
 // server running concurrently (e.g. a second Claude Code window). Each
 // `loom mcp` invocation is its own stdio process serving exactly one
@@ -32,7 +38,8 @@ func generateInstanceID() string {
 
 // New builds an MCP server exposing every Loom operation as a tool.
 func New() *server.MCPServer {
-	s := server.NewMCPServer("Loom", version,
+	s := server.NewMCPServer(
+		"Loom", version,
 		server.WithToolCapabilities(false),
 		server.WithRecovery(),
 		server.WithInstructions(instructions),
