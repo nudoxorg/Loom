@@ -139,8 +139,8 @@ func TestInstallGlobalWritesScriptAndSettings(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading %s: %v", path, err)
 	}
-	if !strings.Contains(string(content), "git rev-parse --is-inside-work-tree") {
-		t.Fatalf("global script does not gate on being inside a git repo:\n%s", content)
+	if strings.Contains(string(content), "git rev-parse") {
+		t.Fatalf("global script should fire unconditionally, not gate on being inside a git repo:\n%s", content)
 	}
 
 	settings := readHooksFile(t, filepath.Join(home, ".claude", "settings.json"))
