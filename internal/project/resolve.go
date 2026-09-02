@@ -7,7 +7,8 @@ import (
 )
 
 // Resolve walks up from a given startDir looking for a .git to determine project root.
-// If none is found throw error for not being initialized as a git repository.
+// If none is found, startDir itself becomes an ad-hoc project root, so non-git
+// directories still get their own Loom project rather than erroring out.
 // Returns fully populated Project (Root, Slug, DBPath)
 func Resolve(startDir string) (*Project, error) {
 	root, err := findRoot(startDir)
@@ -25,12 +26,15 @@ func Resolve(startDir string) (*Project, error) {
 	return &Project{Root: root, Slug: slug, DBPath: dbPath}, nil
 }
 
-// findRoot does the actual upward dir walk looking for git
+// findRoot walks upward from startDir looking for a .git entry. If none is
+// found by the time it reaches the filesystem root, startDir itself (made
+// absolute) is returned as an ad-hoc project root.
 func findRoot(startDir string) (string, error) {
 	dir, err := filepath.Abs(startDir)
 	if err != nil {
 		return "", fmt.Errorf("resolving path: %w", err)
 	}
+	start := dir
 
 	for {
 		_, err := os.Stat(filepath.Join(dir, ".git"))
@@ -40,7 +44,7 @@ func findRoot(startDir string) (string, error) {
 
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			return "", fmt.Errorf("not a git repository (or any parent of %s)", startDir)
+			return start, nil
 		}
 		dir = parent
 	}
