@@ -119,30 +119,28 @@ Supported keys: `default_agent` (used on every `log`/`claim`/`release`/`global l
 
 ### Hooks
 
-Agents forget to check Loom unless you remind them — so instead of relying on you to say it every session, Loom can generate project-scoped hooks that do it automatically, for Claude Code, Codex CLI, Cursor, and Antigravity:
+Agents forget to check Loom unless they are reminded. Loom installs reminder hooks globally, so they are available to every project and every session for a supported harness:
 
 ```bash
-loom hooks install                    # Claude Code, project-scoped
-loom hooks install-global             # Claude Code, machine-wide
-loom hooks install-codex              # Codex CLI, project-scoped
-loom hooks install-codex-global       # Codex CLI, machine-wide
-loom hooks install-cursor             # Cursor, project-scoped
-loom hooks install-cursor-global      # Cursor, machine-wide
-loom hooks install-antigravity        # Antigravity, project-scoped (no global variant — see below)
+loom hooks install claude
+loom hooks install codex
+loom hooks install cursor
+loom hooks install all       # all three supported harnesses
 ```
 
-Project-scoped installs write into the current project only — never `~/.claude/`, `~/.codex/`, `~/.cursor/`, never anything outside the repo:
+There are no project-scoped hook installers. Each command merges Loom's entries into the harness's existing user configuration and preserves unrelated settings and hook fields:
 
-- **Claude**: `.claude/hooks/loom-remind-*.sh` plus an entry in `.claude/settings.json` wiring them to the `SessionStart` and `PreToolUse` (`Write|Edit|MultiEdit`) hook events, merged into whatever's already in that file rather than overwriting it.
-- **Codex**: `.codex/hooks/loom-remind-*.sh` plus an entry in a dedicated `.codex/hooks.json` wiring them to `SessionStart` and `PreToolUse` (`apply_patch` — Codex routes every file edit through one tool, unlike Claude's `Write`/`Edit`/`MultiEdit` split). Codex discovers hooks from `hooks.json` or inline `[hooks]` in `config.toml`; Loom always writes the dedicated file and never touches `config.toml`.
-- **Cursor**: `.cursor/hooks/loom-remind-*.sh` plus an entry in a dedicated `.cursor/hooks.json` wiring them to `sessionStart` and `postToolUse` (matcher `Write`). Cursor's `preToolUse` hook has no field for injecting a non-blocking reminder — only `postToolUse` supports that — so Cursor's per-edit nudge fires just after an edit rather than just before it, unlike the other three tools.
-- **Antigravity**: `.agents/hooks/loom-remind-pretooluse.sh` plus a dedicated named hook group (`"loom-reminder"`) in `.agents/hooks.json`, wired to `PreToolUse` matched against Antigravity's three file-mutation tools (`write_to_file`, `replace_file_content`, `multi_replace_file_content`). **No `install-antigravity-global`** — Antigravity has no session-lifecycle event at all (only `PreToolUse`/`PostToolUse`/`PreInvocation`/`PostInvocation`/`Stop`), so there's no honest way to build the lightweight one-time nudge the other three tools' global hooks are. **Also unverified:** Antigravity's `PreToolUse` output only documents `reason` as surfacing to the agent on a `deny`/`ask` decision, not `allow` — Loom's hook uses `decision: "allow"` with `reason` set to the reminder text, but whether that text actually reaches the agent hasn't been confirmed against a live Antigravity session. If it doesn't, the hook is harmlessly inert (installs cleanly, never errors, just doesn't visibly nudge) rather than broken.
+- **Claude Code**: scripts in `~/.claude/hooks/`, wired through `~/.claude/settings.json` to `SessionStart` and `UserPromptSubmit`.
+- **Codex**: scripts in `~/.codex/hooks/`, wired through `~/.codex/hooks.json` to `SessionStart` and `UserPromptSubmit`. Loom uses the dedicated JSON file and does not modify `~/.codex/config.toml`.
+- **Cursor**: a script in `~/.cursor/hooks/`, wired through `~/.cursor/hooks.json` to `sessionStart`. Cursor documents `beforeSubmitPrompt`, but its native response supports `user_message`, not agent-visible `additional_context`, so Loom does not install a prompt-submit reminder that would only notify the human.
 
-Every hook only injects a static reminder into context — "this project uses Loom, use the MCP tools" — pointing the agent at `loom_status`/`loom_claim`/etc. None of them call `loom` themselves. Session-lifecycle events fire once per session; per-edit events fire again before (or, for Cursor, just after) every file edit, so the reminder survives context drift instead of only being said once at the top and forgotten.
+Every hook only injects static reminder text into the agent's context. Hooks never execute Loom, create claims, or change project state. The reminders tell the agent to prefer the MCP server, check `loom_global_all`, claim and release paths, log meaningful decisions, and pass its actual current working directory to project-scoped tools.
 
-Safe to re-run: an unchanged script isn't rewritten, and a hook already wired for Loom isn't duplicated. Merging into an existing hooks file never touches anything else already there — including fields Loom itself doesn't set, like Codex's/Cursor's `statusMessage`/`timeout`/`async`/`additionalContextLimit`/`loop_limit`/`failClosed` on some other hook's own entries, or another tool's own named hook group in Antigravity's `hooks.json`. Also available as MCP tools (`loom_hooks_install`, `loom_hooks_install_global`, `loom_hooks_install_codex`, `loom_hooks_install_codex_global`, `loom_hooks_install_cursor`, `loom_hooks_install_cursor_global`, `loom_hooks_install_antigravity`), so an agent can set this up for a project itself when asked to.
+Installation is idempotent: unchanged scripts are not rewritten and existing Loom entries are not duplicated. The same operation is available to agents as `loom_hooks_install(harness)`, where `harness` is `claude`, `codex`, `cursor`, or `all`. The MCP tool is also global and takes no `cwd`.
 
-**Codex-specific:** unlike Claude Code and Cursor, a freshly installed or changed project-local Codex hook won't actually fire until you review and trust it — run `/hooks` in the Codex CLI. That's a manual step on Codex's side Loom can't perform for you; the install command's own output reminds you of it.
+**Codex-specific:** run `/hooks` in Codex after installation to review and trust newly installed or changed hooks. Loom cannot approve that trust prompt for you.
+
+**Migrating from an older Loom version:** installing the new global hooks does not search for or delete project-local hooks created by the old commands. Remove old Loom entries and generated scripts under a project's `.claude/`, `.codex/`, `.cursor/`, or `.agents/` directories if you previously installed them there. This repository no longer ships its former project-local hook files.
 
 ---
 
@@ -167,9 +165,9 @@ Point your agent's MCP client config at the `loom` binary, e.g.:
 }
 ```
 
-Tools exposed: `loom_log`, `loom_show`, `loom_claim`, `loom_release`, `loom_status`, `loom_global_log`, `loom_global_show`, `loom_global_all`, `loom_config_get`, `loom_config_list`, `loom_hooks_install`, `loom_hooks_install_global`, `loom_hooks_install_codex`, `loom_hooks_install_codex_global`, `loom_hooks_install_cursor`, `loom_hooks_install_cursor_global`, `loom_hooks_install_antigravity`. (`loom config set` stays CLI-only — global settings changes require a human at the terminal.)
+Tools exposed: `loom_log`, `loom_show`, `loom_claim`, `loom_release`, `loom_status`, `loom_global_log`, `loom_global_show`, `loom_global_all`, `loom_config_get`, `loom_config_list`, and `loom_hooks_install`. (`loom config set` stays CLI-only — global settings changes require a human at the terminal.)
 
-**Every project-scoped tool requires a `cwd` argument.** `loom mcp` is a long-lived process serving one client for the whole session, and its own working directory never changes after it starts — so it can't infer where the agent is currently working just by calling `os.Getwd()`, especially once the agent has `cd`'d somewhere else (e.g. into a git repo nested under the non-git directory the session started in). Each call to `loom_log`, `loom_show`, `loom_claim`, `loom_release`, `loom_status`, or the project-scoped `loom_hooks_install*` tools must pass the agent's actual current working directory as `cwd`, and Loom resolves the project from that (git walk-up, or an ad-hoc root — see above). The global and config tools don't take `cwd`; they're never project-scoped.
+**Every project-scoped tool requires a `cwd` argument.** `loom mcp` is a long-lived process serving one client for the whole session, and its own working directory never changes after it starts — so it can't infer where the agent is currently working just by calling `os.Getwd()`, especially once the agent has `cd`'d somewhere else (e.g. into a git repo nested under the non-git directory the session started in). Each call to `loom_log`, `loom_show`, `loom_claim`, `loom_release`, or `loom_status` must pass the agent's actual current working directory as `cwd`, and Loom resolves the project from that (git walk-up, or an ad-hoc root — see above). The global, config, and hook-installation tools don't take `cwd`; they're never project-scoped.
 
 The server ships with detailed instructions in the MCP `initialize` response — the mental model, when to claim/release, how to pass `cwd` correctly, and how to write a log message that's actually useful to the next agent. Any MCP-aware client surfaces these automatically, so there's nothing extra to read or configure.
 
@@ -189,7 +187,7 @@ Events and claims created via MCP are attributed to the connecting client's own 
 
 ## Roadmap
 
-Config, the local MCP server, and project-scoped hooks are done (see above). What's next, in priority order — see `IDEAS.md` for full detail on each:
+Config, the local MCP server, and global reminder hooks are done (see above). What's next, in priority order — see `IDEAS.md` for full detail on each:
 
 1. **Agent-to-agent thought sharing** — let an agent ask *why* a path was implemented a certain way and get another agent's reasoning, not just a diff
 2. **AGENTS.md generation + Markdown export** — human/fallback-facing snapshots of project state for agents without MCP support, and for sharing or onboarding
