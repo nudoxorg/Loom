@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestInstallCursorWritesOnlySupportedGlobalReminder(t *testing.T) {
+func TestInstallCursorWritesGlobalSessionAndPromptHooks(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 
@@ -20,9 +20,12 @@ func TestInstallCursorWritesOnlySupportedGlobalReminder(t *testing.T) {
 		t.Fatal("Install(cursor) changed = false, want true")
 	}
 
-	scriptPath := filepath.Join(home, ".cursor", "hooks", sessionStartScript)
-	if content := requireExecutable(t, scriptPath); !strings.Contains(content, `"additional_context"`) {
+	hooksDir := filepath.Join(home, ".cursor", "hooks")
+	if content := requireExecutable(t, filepath.Join(hooksDir, sessionStartScript)); !strings.Contains(content, `"additional_context"`) {
 		t.Fatalf("Cursor hook does not emit additional_context payload:\n%s", content)
+	}
+	if content := requireExecutable(t, filepath.Join(hooksDir, promptSubmitScript)); !strings.Contains(content, `"hookEventName":"UserPromptSubmit"`) || !strings.Contains(content, `"additionalContext"`) {
+		t.Fatalf("Cursor prompt hook does not emit compatible UserPromptSubmit context payload:\n%s", content)
 	}
 
 	configPath := filepath.Join(home, ".cursor", "hooks.json")
@@ -34,8 +37,11 @@ func TestInstallCursorWritesOnlySupportedGlobalReminder(t *testing.T) {
 	if len(hooksByEvent["sessionStart"]) != 1 {
 		t.Fatalf("sessionStart hooks = %+v, want one", hooksByEvent["sessionStart"])
 	}
-	if len(hooksByEvent["beforeSubmitPrompt"]) != 0 || len(hooksByEvent["postToolUse"]) != 0 {
-		t.Fatalf("Cursor installed an unsupported prompt/edit reminder: %+v", hooksByEvent)
+	if len(hooksByEvent["beforeSubmitPrompt"]) != 1 {
+		t.Fatalf("beforeSubmitPrompt hooks = %+v, want one", hooksByEvent["beforeSubmitPrompt"])
+	}
+	if len(hooksByEvent["postToolUse"]) != 0 {
+		t.Fatalf("Cursor installed an unsupported edit reminder: %+v", hooksByEvent)
 	}
 
 	changed, err = Install(HarnessCursor)

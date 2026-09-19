@@ -8,17 +8,29 @@ func installCursor() (bool, error) {
 		return false, err
 	}
 
-	scriptPath := filepath.Join(home, ".cursor", "hooks", sessionStartScript)
-	scriptChanged, err := writeScriptIfChanged(scriptPath, cursorScriptContent(sessionStartMessage))
+	hooksDir := filepath.Join(home, ".cursor", "hooks")
+	sessionPath := filepath.Join(hooksDir, sessionStartScript)
+	promptPath := filepath.Join(hooksDir, promptSubmitScript)
+
+	sessionChanged, err := writeScriptIfChanged(sessionPath, cursorScriptContent(sessionStartMessage))
+	if err != nil {
+		return false, err
+	}
+	// Cursor maps Claude Code's UserPromptSubmit event to beforeSubmitPrompt and
+	// accepts the nested hookSpecificOutput response format. Use that compatibility
+	// path so the reminder is injected into agent context instead of shown only as
+	// a native beforeSubmitPrompt user_message.
+	promptChanged, err := writeScriptIfChanged(promptPath, nestedScriptContent("UserPromptSubmit", promptSubmitMessage, HarnessCursor))
 	if err != nil {
 		return false, err
 	}
 
 	configChanged, err := mergeCursorHooksFile(filepath.Join(home, ".cursor", "hooks.json"), []hookWiring{
-		{event: "sessionStart", command: scriptPath},
+		{event: "sessionStart", command: sessionPath},
+		{event: "beforeSubmitPrompt", command: promptPath},
 	})
 	if err != nil {
 		return false, err
 	}
-	return scriptChanged || configChanged, nil
+	return sessionChanged || promptChanged || configChanged, nil
 }

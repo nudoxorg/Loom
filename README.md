@@ -132,7 +132,7 @@ There are no project-scoped hook installers. Each command merges Loom's entries 
 
 - **Claude Code**: scripts in `~/.claude/hooks/`, wired through `~/.claude/settings.json` to `SessionStart` and `UserPromptSubmit`.
 - **Codex**: scripts in `~/.codex/hooks/`, wired through `~/.codex/hooks.json` to `SessionStart` and `UserPromptSubmit`. Loom uses the dedicated JSON file and does not modify `~/.codex/config.toml`.
-- **Cursor**: a script in `~/.cursor/hooks/`, wired through `~/.cursor/hooks.json` to `sessionStart`. Cursor documents `beforeSubmitPrompt`, but its native response supports `user_message`, not agent-visible `additional_context`, so Loom does not install a prompt-submit reminder that would only notify the human.
+- **Cursor**: scripts in `~/.cursor/hooks/`, wired through `~/.cursor/hooks.json` to `sessionStart` and `beforeSubmitPrompt`. The prompt hook uses Cursor's documented Claude Code compatibility mapping (`UserPromptSubmit` → `beforeSubmitPrompt`) and nested `hookSpecificOutput.additionalContext` response so the reminder is injected into agent context rather than shown only to the human.
 
 Every hook only injects static reminder text into the agent's context. Hooks never execute Loom, create claims, or change project state. The reminders tell the agent to prefer the MCP server, check `loom_global_all`, claim and release paths, log meaningful decisions, and pass its actual current working directory to project-scoped tools.
 

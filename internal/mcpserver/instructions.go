@@ -32,7 +32,7 @@ Config (read-only from here):
 - There is no config-writing tool. Changing settings is deliberately a human/CLI action (loom config set), not something an agent does on its own.
 
 Hooks (global user configuration — no cwd):
-- loom_hooks_install(harness) — install Loom reminder hooks for "claude", "codex", "cursor", or "all". This updates only the selected harness's user-level configuration under the home directory and never writes project files. Claude and Codex get SessionStart and UserPromptSubmit reminders. Cursor gets sessionStart because its native beforeSubmitPrompt response does not support agent-visible additional context. Hooks only inject reminder text; they never invoke Loom or claim paths automatically.
+- loom_hooks_install(harness) — install Loom reminder hooks for "claude", "codex", "cursor", or "all". This updates only the selected harness's user-level configuration under the home directory and never writes project files. Claude and Codex get SessionStart and UserPromptSubmit reminders. Cursor gets sessionStart and beforeSubmitPrompt reminders, with the prompt hook using Cursor's Claude Code compatibility mapping to inject agent-visible context. Hooks only inject reminder text; they never invoke Loom or claim paths automatically.
 
 RECOMMENDED WORKFLOW
 1. Start of a session, before making changes: call loom_global_all. It covers this project's active claims and recent history plus everything happening in parallel elsewhere — other agents, other directories, the same directory — in one call. This is how you find out what's going on before you touch anything, not just in this codebase but across every project Loom knows about.
