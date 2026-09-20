@@ -25,10 +25,13 @@ func TestInstallCodexWritesGlobalSessionAndPromptHooks(t *testing.T) {
 	if content := requireExecutable(t, filepath.Join(hooksDir, promptSubmitScript)); !strings.Contains(content, `"hookEventName":"UserPromptSubmit"`) {
 		t.Fatalf("prompt hook does not emit UserPromptSubmit payload:\n%s", content)
 	}
+	if content := requireExecutable(t, filepath.Join(hooksDir, subagentStartScript)); !strings.Contains(content, `"hookEventName":"SubagentStart"`) || !strings.Contains(content, "already-claimed response as a sibling conflict") {
+		t.Fatalf("subagent hook does not emit Loom's SubagentStart context:\n%s", content)
+	}
 
 	hooksByEvent := readNestedHooks(t, filepath.Join(home, ".codex", "hooks.json"))
-	if len(hooksByEvent["SessionStart"]) != 1 || len(hooksByEvent["UserPromptSubmit"]) != 1 {
-		t.Fatalf("Codex hooks = %+v, want one SessionStart and one UserPromptSubmit", hooksByEvent)
+	if len(hooksByEvent["SessionStart"]) != 1 || len(hooksByEvent["UserPromptSubmit"]) != 1 || len(hooksByEvent["SubagentStart"]) != 1 {
+		t.Fatalf("Codex hooks = %+v, want one SessionStart, UserPromptSubmit, and SubagentStart", hooksByEvent)
 	}
 	if len(hooksByEvent["PreToolUse"]) != 0 {
 		t.Fatalf("Codex installed project-style PreToolUse hook: %+v", hooksByEvent["PreToolUse"])

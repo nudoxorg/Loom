@@ -27,10 +27,13 @@ func TestInstallClaudeWritesGlobalSessionAndPromptHooks(t *testing.T) {
 	if content := requireExecutable(t, filepath.Join(hooksDir, promptSubmitScript)); !strings.Contains(content, `"hookEventName":"UserPromptSubmit"`) {
 		t.Fatalf("prompt hook does not emit UserPromptSubmit payload:\n%s", content)
 	}
+	if content := requireExecutable(t, filepath.Join(hooksDir, subagentStartScript)); !strings.Contains(content, `"hookEventName":"SubagentStart"`) || !strings.Contains(content, "already-claimed response as a sibling conflict") {
+		t.Fatalf("subagent hook does not emit Loom's SubagentStart context:\n%s", content)
+	}
 
 	hooksByEvent := readNestedHooks(t, filepath.Join(home, ".claude", "settings.json"))
-	if len(hooksByEvent["SessionStart"]) != 1 || len(hooksByEvent["UserPromptSubmit"]) != 1 {
-		t.Fatalf("Claude hooks = %+v, want one SessionStart and one UserPromptSubmit", hooksByEvent)
+	if len(hooksByEvent["SessionStart"]) != 1 || len(hooksByEvent["UserPromptSubmit"]) != 1 || len(hooksByEvent["SubagentStart"]) != 1 {
+		t.Fatalf("Claude hooks = %+v, want one SessionStart, UserPromptSubmit, and SubagentStart", hooksByEvent)
 	}
 	if len(hooksByEvent["PreToolUse"]) != 0 {
 		t.Fatalf("Claude installed project-style PreToolUse hook: %+v", hooksByEvent["PreToolUse"])
@@ -106,6 +109,9 @@ func TestInstallClaudeUpgradesOldGlobalHookWithoutDuplicate(t *testing.T) {
 	}
 	if len(hooksByEvent["UserPromptSubmit"]) != 1 {
 		t.Fatalf("UserPromptSubmit groups = %d, want newly added prompt reminder", len(hooksByEvent["UserPromptSubmit"]))
+	}
+	if len(hooksByEvent["SubagentStart"]) != 1 {
+		t.Fatalf("SubagentStart groups = %d, want newly added subagent reminder", len(hooksByEvent["SubagentStart"]))
 	}
 }
 

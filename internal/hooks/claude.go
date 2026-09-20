@@ -11,6 +11,7 @@ func installClaude() (bool, error) {
 	hooksDir := filepath.Join(home, ".claude", "hooks")
 	sessionPath := filepath.Join(hooksDir, sessionStartScript)
 	promptPath := filepath.Join(hooksDir, promptSubmitScript)
+	subagentPath := filepath.Join(hooksDir, subagentStartScript)
 
 	sessionChanged, err := writeScriptIfChanged(sessionPath, nestedScriptContent("SessionStart", sessionStartMessage, HarnessClaude))
 	if err != nil {
@@ -20,13 +21,18 @@ func installClaude() (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	subagentChanged, err := writeScriptIfChanged(subagentPath, nestedScriptContent("SubagentStart", subagentStartMessage, HarnessClaude))
+	if err != nil {
+		return false, err
+	}
 
 	configChanged, err := mergeNestedHooksFile(filepath.Join(home, ".claude", "settings.json"), []hookWiring{
 		{event: "SessionStart", command: sessionPath},
 		{event: "UserPromptSubmit", command: promptPath},
+		{event: "SubagentStart", command: subagentPath},
 	})
 	if err != nil {
 		return false, err
 	}
-	return sessionChanged || promptChanged || configChanged, nil
+	return sessionChanged || promptChanged || subagentChanged || configChanged, nil
 }

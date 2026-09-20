@@ -11,6 +11,7 @@ func installCodex() (bool, error) {
 	hooksDir := filepath.Join(home, ".codex", "hooks")
 	sessionPath := filepath.Join(hooksDir, sessionStartScript)
 	promptPath := filepath.Join(hooksDir, promptSubmitScript)
+	subagentPath := filepath.Join(hooksDir, subagentStartScript)
 
 	sessionChanged, err := writeScriptIfChanged(sessionPath, nestedScriptContent("SessionStart", sessionStartMessage, HarnessCodex))
 	if err != nil {
@@ -20,13 +21,18 @@ func installCodex() (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	subagentChanged, err := writeScriptIfChanged(subagentPath, nestedScriptContent("SubagentStart", subagentStartMessage, HarnessCodex))
+	if err != nil {
+		return false, err
+	}
 
 	configChanged, err := mergeNestedHooksFile(filepath.Join(home, ".codex", "hooks.json"), []hookWiring{
 		{event: "SessionStart", command: sessionPath},
 		{event: "UserPromptSubmit", command: promptPath},
+		{event: "SubagentStart", command: subagentPath},
 	})
 	if err != nil {
 		return false, err
 	}
-	return sessionChanged || promptChanged || configChanged, nil
+	return sessionChanged || promptChanged || subagentChanged || configChanged, nil
 }

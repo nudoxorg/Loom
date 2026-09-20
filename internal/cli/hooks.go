@@ -54,7 +54,17 @@ var hooksInstallCmd = &cobra.Command{
 	},
 }
 
+var cursorSubagentContextCmd = &cobra.Command{
+	Use:    "_cursor-subagent-context",
+	Hidden: true,
+	Args:   cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		return hooks.HandleCursorSubagentHook(cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr())
+	},
+}
+
 func init() {
 	hooksCmd.AddCommand(hooksInstallCmd)
+	hooksCmd.AddCommand(cursorSubagentContextCmd)
 	rootCmd.AddCommand(hooksCmd)
 }

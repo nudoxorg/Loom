@@ -27,6 +27,9 @@ func TestInstallCursorWritesGlobalSessionAndPromptHooks(t *testing.T) {
 	if content := requireExecutable(t, filepath.Join(hooksDir, promptSubmitScript)); !strings.Contains(content, `"hookEventName":"UserPromptSubmit"`) || !strings.Contains(content, `"additionalContext"`) {
 		t.Fatalf("Cursor prompt hook does not emit compatible UserPromptSubmit context payload:\n%s", content)
 	}
+	if content := requireExecutable(t, filepath.Join(hooksDir, cursorTaskScript)); !strings.Contains(content, "hooks _cursor-subagent-context") || !strings.Contains(content, `{"permission":"allow"}`) {
+		t.Fatalf("Cursor subagent hook does not invoke the fail-open context helper:\n%s", content)
+	}
 
 	configPath := filepath.Join(home, ".cursor", "hooks.json")
 	raw := readRawObject(t, configPath)
@@ -39,6 +42,12 @@ func TestInstallCursorWritesGlobalSessionAndPromptHooks(t *testing.T) {
 	}
 	if len(hooksByEvent["beforeSubmitPrompt"]) != 1 {
 		t.Fatalf("beforeSubmitPrompt hooks = %+v, want one", hooksByEvent["beforeSubmitPrompt"])
+	}
+	if len(hooksByEvent["subagentStart"]) != 1 {
+		t.Fatalf("subagentStart hooks = %+v, want one", hooksByEvent["subagentStart"])
+	}
+	if len(hooksByEvent["preToolUse"]) != 1 || hooksByEvent["preToolUse"][0].Matcher != "^Task$" {
+		t.Fatalf("preToolUse hooks = %+v, want one Task-scoped hook", hooksByEvent["preToolUse"])
 	}
 	if len(hooksByEvent["postToolUse"]) != 0 {
 		t.Fatalf("Cursor installed an unsupported edit reminder: %+v", hooksByEvent)
