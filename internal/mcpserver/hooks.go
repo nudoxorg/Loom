@@ -15,7 +15,7 @@ func registerHooksTools(s *server.MCPServer) {
 	s.AddTool(
 		mcp.NewTool(
 			"loom_hooks_install",
-			mcp.WithDescription("Install global Loom reminder hooks for Claude Code, Codex, Cursor, or all supported harnesses. This updates only user-level config under the home directory; it never writes project files."),
+			mcp.WithDescription("Install global Loom reminder hooks for root agents and subagents in Claude Code, Codex, Cursor, or all supported harnesses. This updates only user-level config under the home directory; it never writes project files."),
 			mcp.WithString(
 				"harness",
 				mcp.Required(),

@@ -130,11 +130,13 @@ loom hooks install all       # all three supported harnesses
 
 There are no project-scoped hook installers. Each command merges Loom's entries into the harness's existing user configuration and preserves unrelated settings and hook fields:
 
-- **Claude Code**: scripts in `~/.claude/hooks/`, wired through `~/.claude/settings.json` to `SessionStart` and `UserPromptSubmit`.
-- **Codex**: scripts in `~/.codex/hooks/`, wired through `~/.codex/hooks.json` to `SessionStart` and `UserPromptSubmit`. Loom uses the dedicated JSON file and does not modify `~/.codex/config.toml`.
-- **Cursor**: scripts in `~/.cursor/hooks/`, wired through `~/.cursor/hooks.json` to `sessionStart` and `beforeSubmitPrompt`. The prompt hook uses Cursor's documented Claude Code compatibility mapping (`UserPromptSubmit` → `beforeSubmitPrompt`) and nested `hookSpecificOutput.additionalContext` response so the reminder is injected into agent context rather than shown only to the human.
+- **Claude Code**: scripts in `~/.claude/hooks/`, wired through `~/.claude/settings.json` to `SessionStart`, `UserPromptSubmit`, and `SubagentStart`.
+- **Codex**: scripts in `~/.codex/hooks/`, wired through `~/.codex/hooks.json` to `SessionStart`, `UserPromptSubmit`, and `SubagentStart`. Loom uses the dedicated JSON file and does not modify `~/.codex/config.toml`.
+- **Cursor**: scripts in `~/.cursor/hooks/`, wired through `~/.cursor/hooks.json` to `sessionStart`, `beforeSubmitPrompt`, `subagentStart`, and a `preToolUse` hook matched only to `Task`. The prompt hook uses Cursor's documented Claude Code compatibility mapping (`UserPromptSubmit` → `beforeSubmitPrompt`) and nested `hookSpecificOutput.additionalContext` response so the reminder is injected into agent context rather than shown only to the human. Cursor's `subagentStart` response cannot inject context, so Loom's `Task` hook prefixes the initial local-subagent prompt and leaves resumed subagents unchanged.
 
-Every hook only injects static reminder text into the agent's context. Hooks never execute Loom, create claims, or change project state. The reminders tell the agent to prefer the MCP server, check `loom_global_all`, claim and release paths, log meaningful decisions, and pass its actual current working directory to project-scoped tools.
+The hooks only add reminder context; they never create claims or change Loom's project state automatically. The root-agent reminders are unchanged. Subagent reminders additionally tell each new subagent to proceed only after a fresh claim, treat an already-claimed response as a sibling conflict, release only claims it created, and avoid editing if Loom MCP is unavailable. Cursor's Task rewriter is idempotent and fail-open, and preserves every other Task input field.
+
+Cursor cloud agents do not run local user hooks or inherit local MCP servers, so the Cursor subagent coverage applies to local subagents.
 
 Installation is idempotent: unchanged scripts are not rewritten and existing Loom entries are not duplicated. The same operation is available to agents as `loom_hooks_install(harness)`, where `harness` is `claude`, `codex`, `cursor`, or `all`. The MCP tool is also global and takes no `cwd`.
 
