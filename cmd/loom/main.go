@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nudoxorg/loom/internal/cli"
+	"github.com/nudoxorg/Loom/internal/cli"
 )
 
 func main() {

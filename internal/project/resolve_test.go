@@ -8,7 +8,7 @@ import (
 
 func withResolveTempHome(t *testing.T) {
 	t.Helper()
-	t.Setenv("HOME", t.TempDir())
+	setTestHome(t, t.TempDir())
 	if err := EnsureHome(); err != nil {
 		t.Fatalf("EnsureHome() error = %v", err)
 	}

@@ -9,9 +9,9 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 
-	"github.com/nudoxorg/loom/internal/config"
-	"github.com/nudoxorg/loom/internal/project"
-	"github.com/nudoxorg/loom/internal/storage"
+	"github.com/nudoxorg/Loom/internal/config"
+	"github.com/nudoxorg/Loom/internal/project"
+	"github.com/nudoxorg/Loom/internal/storage"
 )
 
 func registerEventTools(s *server.MCPServer) {

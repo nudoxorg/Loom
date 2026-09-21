@@ -12,8 +12,8 @@ import (
 
 	"github.com/mattn/go-isatty"
 
-	"github.com/nudoxorg/loom/internal/project"
-	"github.com/nudoxorg/loom/internal/storage"
+	"github.com/nudoxorg/Loom/internal/project"
+	"github.com/nudoxorg/Loom/internal/storage"
 )
 
 // ColorEnabled is computed once at startup from whether stdout is a

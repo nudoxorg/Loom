@@ -1,4 +1,4 @@
-module github.com/nudoxorg/loom
+module github.com/nudoxorg/Loom
 
 go 1.26.2
 

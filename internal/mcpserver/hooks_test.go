@@ -9,7 +9,7 @@ import (
 )
 
 func TestHandleHooksInstallRequiresHarness(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
+	setTestHome(t, t.TempDir())
 	res, err := handleHooksInstall(context.Background(), callWith(nil))
 	if err != nil {
 		t.Fatalf("handleHooksInstall() error = %v", err)
@@ -20,7 +20,7 @@ func TestHandleHooksInstallRequiresHarness(t *testing.T) {
 }
 
 func TestHandleHooksInstallRejectsUnknownHarness(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
+	setTestHome(t, t.TempDir())
 	res, err := handleHooksInstall(context.Background(), callWith(map[string]any{"harness": "antigravity"}))
 	if err != nil {
 		t.Fatalf("handleHooksInstall() error = %v", err)
@@ -32,7 +32,7 @@ func TestHandleHooksInstallRejectsUnknownHarness(t *testing.T) {
 
 func TestHandleHooksInstallAllUsesGlobalHome(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	setTestHome(t, home)
 	res, err := handleHooksInstall(context.Background(), callWith(map[string]any{"harness": "all"}))
 	if err != nil {
 		t.Fatalf("handleHooksInstall() error = %v", err)

@@ -8,12 +8,12 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 
-	"github.com/nudoxorg/loom/internal/project"
+	"github.com/nudoxorg/Loom/internal/project"
 )
 
 func withMCPTempHome(t *testing.T) {
 	t.Helper()
-	t.Setenv("HOME", t.TempDir())
+	setTestHome(t, t.TempDir())
 	if err := project.EnsureHome(); err != nil {
 		t.Fatalf("EnsureHome() error = %v", err)
 	}

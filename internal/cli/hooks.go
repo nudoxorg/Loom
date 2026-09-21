@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/nudoxorg/loom/internal/hooks"
-	"github.com/nudoxorg/loom/internal/output"
+	"github.com/nudoxorg/Loom/internal/hooks"
+	"github.com/nudoxorg/Loom/internal/output"
 	"github.com/spf13/cobra"
 )
 

@@ -10,7 +10,7 @@ import (
 
 func TestInstallClaudeWritesGlobalSessionAndPromptHooks(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	setTestHome(t, home)
 
 	changed, err := Install(HarnessClaude)
 	if err != nil {
@@ -50,7 +50,7 @@ func TestInstallClaudeWritesGlobalSessionAndPromptHooks(t *testing.T) {
 
 func TestInstallClaudePreservesExistingSettings(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	setTestHome(t, home)
 	configDir := filepath.Join(home, ".claude")
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -86,7 +86,7 @@ func TestInstallClaudePreservesExistingSettings(t *testing.T) {
 
 func TestInstallClaudeUpgradesOldGlobalHookWithoutDuplicate(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	setTestHome(t, home)
 	hooksDir := filepath.Join(home, ".claude", "hooks")
 	if err := os.MkdirAll(hooksDir, 0o755); err != nil {
 		t.Fatal(err)

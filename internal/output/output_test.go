@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nudoxorg/loom/internal/project"
-	"github.com/nudoxorg/loom/internal/storage"
+	"github.com/nudoxorg/Loom/internal/project"
+	"github.com/nudoxorg/Loom/internal/storage"
 )
 
 func TestFormatEventTodayUsesBareTime(t *testing.T) {

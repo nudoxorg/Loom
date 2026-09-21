@@ -4,8 +4,8 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/spf13/cobra"
 
-	"github.com/nudoxorg/loom/internal/mcpserver"
-	"github.com/nudoxorg/loom/internal/project"
+	"github.com/nudoxorg/Loom/internal/mcpserver"
+	"github.com/nudoxorg/Loom/internal/project"
 )
 
 var mcpCmd = &cobra.Command{

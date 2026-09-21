@@ -3,7 +3,7 @@ package config
 import (
 	"testing"
 
-	"github.com/nudoxorg/loom/internal/project"
+	"github.com/nudoxorg/Loom/internal/project"
 )
 
 // withTempHome points HomeDir() at a scratch directory so tests never touch
@@ -11,7 +11,7 @@ import (
 // every CLI command makes before touching config.
 func withTempHome(t *testing.T) {
 	t.Helper()
-	t.Setenv("HOME", t.TempDir())
+	setTestHome(t, t.TempDir())
 	if err := project.EnsureHome(); err != nil {
 		t.Fatalf("EnsureHome() error = %v", err)
 	}

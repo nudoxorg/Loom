@@ -9,10 +9,9 @@ import (
 
 	"github.com/mark3labs/mcp-go/server"
 
-	"github.com/nudoxorg/loom/internal/config"
+	"github.com/nudoxorg/Loom/internal/config"
+	"github.com/nudoxorg/Loom/internal/version"
 )
-
-const version = "0.1.0"
 
 // cwdDescription is shared by every project-scoped tool's required "cwd"
 // argument. The MCP server is a long-lived process whose own working
@@ -39,7 +38,7 @@ func generateInstanceID() string {
 // New builds an MCP server exposing every Loom operation as a tool.
 func New() *server.MCPServer {
 	s := server.NewMCPServer(
-		"Loom", version,
+		"Loom", version.Version,
 		server.WithToolCapabilities(false),
 		server.WithRecovery(),
 		server.WithInstructions(instructions),

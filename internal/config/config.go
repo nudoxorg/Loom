@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/nudoxorg/loom/internal/project"
+	"github.com/nudoxorg/Loom/internal/project"
 )
 
 type Settings struct {

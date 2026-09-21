@@ -1,0 +1,66 @@
+version: 2
+
+project_name: loom
+
+before:
+  hooks:
+    - go mod verify
+    - go test ./...
+
+builds:
+  - id: loom
+    main: ./cmd/loom
+    binary: loom
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    ldflags:
+      - >-
+        -s -w
+        -X github.com/nudoxorg/Loom/internal/version.Version={{ .Version }}
+
+archives:
+  - ids:
+      - loom
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - README.md
+      - LICENSE.md
+      - SECURITY.md
+      - CONTRIBUTING.md
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+release:
+  prerelease: auto
+
+changelog:
+  use: git
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "^ci:"
+      - "^build:"
+      - "^style:"
+      - "^Merge pull request"

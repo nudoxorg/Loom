@@ -30,7 +30,7 @@ func TestParseHarness(t *testing.T) {
 
 func TestInstallAllWritesOnlyGlobalConfigs(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	setTestHome(t, home)
 
 	changed, err := InstallAll()
 	if err != nil {

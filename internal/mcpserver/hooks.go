@@ -8,7 +8,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 
-	"github.com/nudoxorg/loom/internal/hooks"
+	"github.com/nudoxorg/Loom/internal/hooks"
 )
 
 func registerHooksTools(s *server.MCPServer) {

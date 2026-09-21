@@ -3,9 +3,9 @@ package cli
 import (
 	"fmt"
 
-	"github.com/nudoxorg/loom/internal/config"
-	"github.com/nudoxorg/loom/internal/output"
-	"github.com/nudoxorg/loom/internal/project"
+	"github.com/nudoxorg/Loom/internal/config"
+	"github.com/nudoxorg/Loom/internal/output"
+	"github.com/nudoxorg/Loom/internal/project"
 	"github.com/spf13/cobra"
 )
 

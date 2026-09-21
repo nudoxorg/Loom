@@ -10,7 +10,7 @@ import (
 
 func TestInstallCursorWritesGlobalSessionAndPromptHooks(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	setTestHome(t, home)
 
 	changed, err := Install(HarnessCursor)
 	if err != nil {
@@ -64,7 +64,7 @@ func TestInstallCursorWritesGlobalSessionAndPromptHooks(t *testing.T) {
 
 func TestInstallCursorPreservesExistingConfigAndHandlerFields(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	setTestHome(t, home)
 	configDir := filepath.Join(home, ".cursor")
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		t.Fatal(err)

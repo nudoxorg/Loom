@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/nudoxorg/loom/internal/storage"
+	"github.com/nudoxorg/Loom/internal/storage"
 )
 
 // LabeledEvent and LabeledClaim pair storage rows with which project

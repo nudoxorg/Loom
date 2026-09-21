@@ -8,7 +8,7 @@ import (
 
 func TestInstallCodexWritesGlobalSessionAndPromptHooks(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	setTestHome(t, home)
 
 	changed, err := Install(HarnessCodex)
 	if err != nil {

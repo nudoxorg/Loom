@@ -1,10 +1,18 @@
 # Loom
 
+[![CI](https://github.com/nudoxorg/Loom/actions/workflows/ci.yml/badge.svg)](https://github.com/nudoxorg/Loom/actions/workflows/ci.yml)
+[![GitHub release](https://img.shields.io/github/v/release/nudoxorg/Loom?include_prereleases)](https://github.com/nudoxorg/Loom/releases)
+[![Go version](https://img.shields.io/github/go-mod/go-version/nudoxorg/Loom)](go.mod)
+[![License](https://img.shields.io/github/license/nudoxorg/Loom)](LICENSE.md)
+
 Shared context for coding agents.
 
 When you run multiple AI coding agents on the same codebase — Claude Code, Cursor, Codex, or anything else — they have no awareness of each other. One agent can overwrite what another is working on. There's no shared history of what happened or why. Loom fixes that.
 
 Loom is a small, local CLI tool that gives agents a shared event log and a coordination layer. It requires no account, no server, no VS Code fork, and nothing running in the background unless you want it to. It just works from the command line.
+
+> [!NOTE]
+> Loom is pre-v1 software. Its local event log, claims, MCP server, and global hooks are ready for the v0.1 release series, but interfaces may still change before v1. Real-time agent-to-agent communication is not part of v0.1.
 
 ---
 
@@ -48,8 +56,41 @@ Each project gets its own SQLite database. Two agents working in the same direct
 
 ## Installation
 
+### Release archives
+
+Download the archive for your platform from [GitHub Releases](https://github.com/nudoxorg/Loom/releases). Release filenames follow this pattern:
+
+```text
+loom_<version>_<os>_<architecture>.<extension>
+```
+
+Supported release targets:
+
+- `linux_amd64` and `linux_arm64` (`.tar.gz`)
+- `darwin_amd64` and `darwin_arm64` for macOS (`.tar.gz`)
+- `windows_amd64` and `windows_arm64` (`.zip`)
+
+Extract the archive, move `loom` (or `loom.exe` on Windows) to a directory on your `PATH`, then check the installed version:
+
 ```bash
-go install github.com/nudoxorg/loom/cmd/loom@latest
+loom --version
+```
+
+Each release includes `checksums.txt` with SHA-256 hashes. Compare your downloaded archive with its matching entry:
+
+```bash
+shasum -a 256 loom_0.1.0_darwin_arm64.tar.gz
+grep loom_0.1.0_darwin_arm64.tar.gz checksums.txt
+```
+
+Release binaries are not currently code-signed or notarized. On macOS and Windows, the operating system may display a warning before first use.
+
+### Build from source
+
+Loom requires the Go version declared in [`go.mod`](go.mod). Install from the module:
+
+```bash
+go install github.com/nudoxorg/Loom/cmd/loom@latest
 ```
 
 Make sure `~/go/bin` is on your `$PATH`:
@@ -59,6 +100,16 @@ export PATH=$PATH:$(go env GOPATH)/bin
 ```
 
 Add that line to your `~/.zshrc` or `~/.bashrc` to make it permanent.
+
+You can also clone the repository and build it directly:
+
+```bash
+git clone https://github.com/nudoxorg/Loom.git
+cd Loom
+go build -o loom ./cmd/loom
+```
+
+Source builds, including `go install`, report version `dev`. Official tagged release binaries report the semantic version derived from their tag without the leading `v`.
 
 ---
 
@@ -189,13 +240,21 @@ Events and claims created via MCP are attributed to the connecting client's own 
 
 ## Roadmap
 
-Config, the local MCP server, and global reminder hooks are done (see above). What's next, in priority order — see `IDEAS.md` for full detail on each:
+Config, the local MCP server, and global reminder hooks are done. Planned directions include:
 
 1. **Agent-to-agent thought sharing** — let an agent ask *why* a path was implemented a certain way and get another agent's reasoning, not just a diff
 2. **AGENTS.md generation + Markdown export** — human/fallback-facing snapshots of project state for agents without MCP support, and for sharing or onboarding
 3. **Daemon** and **Git integration** — background automation for auto-logging events; nice-to-have, not load-bearing
 
 ---
+
+## Security
+
+Please report vulnerabilities privately through [GitHub's security advisory form](https://github.com/nudoxorg/Loom/security/advisories/new). See [SECURITY.md](SECURITY.md) for the disclosure policy.
+
+## Contributing
+
+Bug reports and focused pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the development checks and contribution process.
 
 ## License
 

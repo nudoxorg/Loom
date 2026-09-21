@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/nudoxorg/loom/internal/config"
-	"github.com/nudoxorg/loom/internal/output"
-	"github.com/nudoxorg/loom/internal/project"
-	"github.com/nudoxorg/loom/internal/storage"
+	"github.com/nudoxorg/Loom/internal/config"
+	"github.com/nudoxorg/Loom/internal/output"
+	"github.com/nudoxorg/Loom/internal/project"
+	"github.com/nudoxorg/Loom/internal/storage"
 	"github.com/spf13/cobra"
 )
 

@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nudoxorg/loom/internal/storage"
+	"github.com/nudoxorg/Loom/internal/storage"
 )
 
 func withAggregateTempHome(t *testing.T) {
 	t.Helper()
-	t.Setenv("HOME", t.TempDir())
+	setTestHome(t, t.TempDir())
 	if err := EnsureHome(); err != nil {
 		t.Fatalf("EnsureHome() error = %v", err)
 	}
