@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 func homeDirectory() (string, error) {
@@ -18,6 +19,9 @@ func homeDirectory() (string, error) {
 func writeScriptIfChanged(path, content string) (bool, error) {
 	existing, err := os.ReadFile(path)
 	if err == nil && string(existing) == content {
+		if runtime.GOOS == "windows" {
+			return false, nil
+		}
 		if info, statErr := os.Stat(path); statErr == nil && info.Mode()&0o111 != 0 {
 			return false, nil
 		}

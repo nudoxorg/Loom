@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -102,7 +103,7 @@ func requireExecutable(t *testing.T, path string) string {
 	if err != nil {
 		t.Fatalf("stat %s: %v", path, err)
 	}
-	if info.Mode()&0o111 == 0 {
+	if runtime.GOOS != "windows" && info.Mode()&0o111 == 0 {
 		t.Fatalf("%s is not executable: mode = %v", path, info.Mode())
 	}
 	data, err := os.ReadFile(path)
